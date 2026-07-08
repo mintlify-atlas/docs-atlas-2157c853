@@ -1,6 +1,6 @@
 ---
 title: "Register a Custom LaTeX Template with /add-template"
-sidebarTitle: "/add-template"
+sidebarTitle: "Add Template"
 description: "Register your own LaTeX CV or cover letter template. /add-template captures compile instructions, test-compiles the template, and wires it into /apply."
 ---
 
@@ -8,7 +8,7 @@ The framework ships with two LaTeX templates out of the box: a [moderncv](https:
 
 ## Usage
 
-```
+```bash
 /add-template
 /add-template --list
 /add-template --use awesome-cv
@@ -63,7 +63,7 @@ This makes the stored template completely profile-agnostic. You can commit it to
 
 Use the `--use` flag to switch between registered templates at any time:
 
-```
+```bash
 /add-template --use awesome-cv       # switch to a registered template
 /add-template --use default          # revert to stock moderncv / cover.cls
 /add-template --list                 # see all registered templates and which is active

@@ -1,7 +1,7 @@
 ---
-title: "Full Application Workflow with /apply"
+title: "Draft and Submit a Tailored Job Application with /apply"
 sidebarTitle: "/apply"
-description: "The /apply command runs a drafter-reviewer pipeline: evaluates fit, drafts a tailored LaTeX CV and cover letter, compiles PDFs, and runs ATS verification — all automatically."
+description: "Run a full drafter-reviewer pipeline: evaluate fit, draft a tailored LaTeX CV and cover letter, compile PDFs, and verify ATS compatibility automatically."
 ---
 
 `/apply` is the core command of the AI Job Search framework. Given a job posting URL or pasted description, it runs an end-to-end application pipeline: evaluating your fit against the role, drafting a tailored LaTeX CV and cover letter, running a second Claude agent to research the company and critique the drafts, revising based on that feedback, compiling both PDFs and verifying their layout, checking the CV's text layer for ATS parseability, and presenting the final output with a verification checklist. Every claim in the output is grounded in your actual profile — no skills or experience are fabricated.

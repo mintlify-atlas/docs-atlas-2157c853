@@ -1,7 +1,7 @@
 ---
-title: "Job Discovery with /scrape"
+title: "Search Job Portals and Find New Openings with /scrape"
 sidebarTitle: "/scrape"
-description: "Search multiple job portals in parallel, deduplicate results, and get a fit-ranked shortlist. Works with built-in Danish portals and any portal added via /add-portal."
+description: "Search Danish job portals and LinkedIn in parallel, deduplicate results, and get fit-rated matches. Extend to any market with /add-portal."
 ---
 
 `/scrape` searches multiple job portals using the queries configured during `/setup`, deduplicates results against jobs you've already seen or applied to, and presents new matches sorted by fit. The built-in portal skills cover the Danish job market — Jobindex, Akademikernes Jobbank, Jobdanmark, and Jobnet — plus LinkedIn, which works for any country. If your market isn't covered, the `/add-portal` command can generate a custom portal integration from any job board URL.
@@ -36,7 +36,7 @@ All results are stored in `seen_jobs.json` so the next scrape never shows you th
 | Portal | Coverage | Notes |
 |--------|----------|-------|
 | **Jobindex** | Denmark | The largest Danish job board; covers roles across all industries and experience levels |
-| **Akademikernes Jobbank** | Denmark | IDA's job board; strong coverage of engineering, science, and academic roles |
+| **Akademikernes Jobbank** | Denmark | The Danish academic unions' job portal; strong coverage of graduate, science, and professional roles |
 | **Jobdanmark** | Denmark | Major Danish generalist job board with broad industry coverage |
 | **Jobnet** | Denmark | The Danish government's official job portal; includes public sector and regulated roles |
 | **LinkedIn** | Country-agnostic | Built on LinkedIn's public `jobs-guest` endpoints; takes location as an explicit flag so it works for any market. Zero runtime dependencies — runs with just `bun`. Intended for personal use only; keep query volume low |

@@ -1,7 +1,7 @@
 ---
-title: "Profile Onboarding with /setup"
+title: "Set Up Your Candidate Profile for AI Job Search with /setup"
 sidebarTitle: "/setup"
-description: "Run /setup inside Claude Code to build your candidate profile from documents, a CV import, or a structured interview. Supports partial re-runs with --section flags."
+description: "Run /setup in Claude Code to populate your profile from documents, a single CV, or a guided interview. Re-run any time with --section flags."
 ---
 
 Before you can search for jobs, apply to postings, or rank opportunities, the AI Job Search framework needs to know who you are. `/setup` is the first command you run inside Claude Code — it collects your professional information and populates all seven profile skill files that every other command depends on. Running `/setup` once gives the framework enough context to evaluate fit, tailor CVs, write cover letters, and configure your job search queries. It can also be re-run at any time to update a specific section without touching the rest of your profile.
@@ -73,10 +73,8 @@ After `/setup` completes, the following files are written or updated:
 | `CLAUDE.md` | Full candidate profile — name, contact, education, experience, skills, goals, workflow rules, and verification checklist |
 | `01-candidate-profile.md` | Structured profile: Identity, Education, Experience, Independent Projects, Technical Skills, Publications, Awards, References |
 | `02-behavioral-profile.md` | Behavioral assessment or synthesized self-assessment: strongest traits, how you work best, management style preferences |
-| `03-writing-style.md` | Tone, structure, do's and don'ts for CV and cover letter writing |
 | `04-job-evaluation.md` | Personalized scoring framework: strong/moderate/weak skill match areas, career goals, motivation filters |
 | `05-cv-templates.md` | LaTeX CV profile statement templates for different role types |
-| `06-cover-letter-templates.md` | Cover letter opening patterns, bullet structures, closing formulations |
 | `07-interview-prep.md` | STAR examples from your actual experience (Paths B/C) or STAR candidate stubs flagged for manual completion (Path A) |
 | `cv/main_example.tex` | Your LaTeX CV template with actual name, contact info, education, and recent experience |
 | `.claude/skills/job-scraper/search-queries.md` | Job search queries configured for your role titles, skills, and location |

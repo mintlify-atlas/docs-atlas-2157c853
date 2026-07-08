@@ -1,5 +1,5 @@
 ---
-title: "Detailed Setup Guide for AI Job Search"
+title: "AI Job Search Setup: Install Every Dependency Step by Step"
 sidebarTitle: "Setup Guide"
 description: "Step-by-step installation guide for AI Job Search: Claude Code, Python, Bun, LaTeX, and optional pdftotext for the full ATS verification workflow."
 ---
@@ -152,7 +152,7 @@ Start Claude Code from the repository root, then run the onboarding command:
 claude
 ```
 
-```
+```text
 /setup
 ```
 
@@ -181,7 +181,7 @@ All three paths converge on the same result: a complete set of populated profile
 
 You can update specific sections without re-running the full profile interview:
 
-```
+```text
 /setup --section skills
 /setup --section experience
 /setup --section search
@@ -211,13 +211,13 @@ This creates `salary_data.json`, which the `/apply` workflow uses for salary ben
 
 With setup complete, test the full application workflow against a real job posting:
 
-```
+```text
 /apply https://jobindex.dk/job/1234567
 ```
 
 Or paste a job description directly:
 
-```
+```text
 /apply [paste job posting text here]
 ```
 

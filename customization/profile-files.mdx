@@ -1,7 +1,7 @@
 ---
-title: "Manually Editing Your Candidate Profile Files"
+title: "Candidate Profile Files: What They Contain and How to Edit"
 sidebarTitle: "Profile Files"
-description: "Every profile file the /apply workflow reads, what each one contains, and how to edit them directly without re-running /setup."
+description: "Every profile file the /apply and /scrape workflows read — what each one contains and how to edit them directly without re-running /setup."
 ---
 
 The profile files that power every downstream command live in `.claude/skills/job-application-assistant/` and in the repo-root `CLAUDE.md`. Running `/setup` populates them automatically from your documents folder, a pasted CV, or an onboarding interview — but you can edit any of them directly at any time. Changes take effect immediately on the next `/apply`, `/scrape`, or `/rank` run, with no reload step required.
@@ -94,8 +94,8 @@ Edit this file after each application round as you accumulate new STAR examples.
 | File | What to change |
 |------|----------------|
 | `CLAUDE.md` | Full profile (name, education, experience, skills, goals) |
-| `01-candidate-profile.md` | Structured CV data |
-| `02-behavioral-profile.md` | Behavioral assessment |
+| `01-candidate-profile.md` | Structured version of your CV data |
+| `02-behavioral-profile.md` | Your behavioral assessment or self-assessment |
 | `04-job-evaluation.md` | Skill match areas, career goals, motivation filters |
 | `05-cv-templates.md` | Profile statement templates for different role types |
 | `07-interview-prep.md` | STAR examples from actual experience |
@@ -126,5 +126,5 @@ To update a specific section of your profile without re-running the full onboard
 /setup --section search
 ```
 
-This re-runs only the search configuration interview — which roles to target, which skills to search for, which locations, and which portals — and updates `search-queries.md` accordingly. Other profile sections are left untouched.
+This re-runs only the search configuration interview — which roles to target, which skills to search for, which locations, and which portals — and updates `search-queries.md` accordingly. Other profile sections are left untouched. See [/setup](/workflow/setup-command) for the full command reference.
 </Tip>

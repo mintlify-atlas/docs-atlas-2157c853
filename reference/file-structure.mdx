@@ -1,7 +1,7 @@
 ---
-title: "AI Job Search Repository File Structure"
+title: "File Structure Reference for the AI Job Search Framework"
 sidebarTitle: "File Structure"
-description: "A complete map of every file and directory in the AI Job Search repo — what each one does, which ones you edit, and which are managed automatically."
+description: "A complete map of every file and directory in the AI Job Search repo — what each one does, which to edit, and which are managed automatically."
 ---
 
 The repository has a specific layout that separates your profile files, framework commands, job portal tools, and output documents. Understanding this layout makes it clear which files you own and configure versus which ones define the workflow and should be left untouched.
@@ -23,6 +23,8 @@ ai-job-search/
 │   │   ├── rank.md                    # /rank triage scraped jobs into a ranked shortlist
 │   │   ├── outcome.md                 # /outcome record application results, archive materials
 │   │   └── reset.md                   # /reset wipe profile data or documents folder
+│   ├── agents/
+│   │   └── gemini-research-expert.md  # Gemini subagent for company research
 │   ├── skills/
 │   │   ├── job-application-assistant/  # Core application skill
 │   │   │   ├── SKILL.md               # Skill definition
@@ -92,7 +94,7 @@ These are the files you populate — either manually or through the `/setup` onb
 
 These files define how the workflow operates. They are part of the framework itself — not your personal data — and should not be edited unless you are intentionally customizing the framework behavior.
 
-**`.claude/commands/`** contains the definitions for every slash command: `apply.md`, `setup.md`, `expand.md`, `add-template.md`, `add-portal.md`, `rank.md`, `outcome.md`, `reset.md`, and `upskill.md`. Claude Code reads these when you run the corresponding command.
+**`.claude/commands/`** contains the definitions for every slash command: `apply.md`, `setup.md`, `expand.md`, `add-template.md`, `add-portal.md`, `rank.md`, `outcome.md`, and `reset.md`. Claude Code reads these when you run the corresponding command. The `/upskill` and `/scrape` commands are driven by skills in `.claude/skills/upskill/` and `.claude/skills/job-scraper/` respectively, not by files in this directory.
 
 **`.claude/skills/*/SKILL.md`** files are the skill definition headers that Claude reads to understand the purpose and scope of each skill directory. They are not your profile data.
 

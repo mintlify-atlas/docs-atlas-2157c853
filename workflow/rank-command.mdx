@@ -1,7 +1,7 @@
 ---
-title: "Batch Job Scoring with /rank"
+title: "Rank and Triage Your Scraped Job Postings with /rank"
 sidebarTitle: "/rank"
-description: "Batch-score all scraped job postings against your fit framework using parallel agents. Get a ranked shortlist with strengths, gaps, and deal-breaker flags before investing time in /apply."
+description: "Batch-score new postings against your fit framework using parallel agents. Get a ranked shortlist with per-job strengths, gaps, and deal-breaker flags."
 ---
 
 `/rank` sits between `/scrape` and `/apply`. After a scrape returns more postings than you want to evaluate by eye, `/rank` batch-scores every new one against your fit framework using parallel agents — each agent fetches the live posting and scores it across four dimensions — then returns a ranked shortlist with honest per-job strengths, gaps, deal-breaker vetoes, and deadline urgency flags. The scores are deliberately lightweight triage, not final evaluations: `/apply` always re-evaluates with full company research when you decide to apply.
