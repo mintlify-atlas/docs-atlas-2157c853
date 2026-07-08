@@ -1,0 +1,224 @@
+---
+title: "Detailed Setup Guide for AI Job Search"
+sidebarTitle: "Setup Guide"
+description: "Step-by-step installation guide for AI Job Search: Claude Code, Python, Bun, LaTeX, and optional pdftotext for the full ATS verification workflow."
+---
+
+This guide covers every prerequisite for AI Job Search in full detail. The [Quickstart](/quickstart) gets you running in 15 minutes on the happy path; come here when you need exact install commands for your platform, want to understand why each dependency is required, or are troubleshooting a specific tool.
+
+## Prerequisites
+
+### Claude Code
+
+Claude Code is Anthropic's CLI that powers the entire framework. Install it globally with npm:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+You need either an Anthropic API key or a Claude Pro/Team subscription to use Claude Code. See the [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code) for authentication details.
+
+### Python 3.10+
+
+Python is required for the salary lookup tool. Check whether you have a compatible version:
+
+<CodeGroup>
+  ```bash macOS / Linux
+  python --version
+  ```
+
+  ```powershell Windows
+  py --version
+  ```
+</CodeGroup>
+
+On Windows, `py --version` is often the most reliable check if `python` is not on your `PATH`.
+
+### Bun
+
+The job portal CLIs are written in TypeScript and run with [Bun](https://bun.sh). Install it for your platform:
+
+<CodeGroup>
+  ```bash macOS / Linux
+  curl -fsSL https://bun.sh/install | bash
+  ```
+
+  ```powershell Windows PowerShell
+  powershell -ExecutionPolicy Bypass -c "irm https://bun.sh/install.ps1 | iex"
+  ```
+</CodeGroup>
+
+On Windows you can also use winget: `winget install Oven-sh.Bun`.
+
+### LaTeX
+
+The `/apply` command compiles CVs with `lualatex` and cover letters with `xelatex`. Install a full LaTeX distribution for your platform:
+
+<Tabs>
+  <Tab title="Windows">
+    Install [MiKTeX](https://miktex.org/download). MiKTeX supports on-the-fly package installation, so missing packages (such as `moderncv`) are downloaded automatically on first compile.
+
+    <Warning>
+      Use `lualatex` for the CV — `pdflatex` frequently fails on modern MiKTeX installs with `fontawesome5` font-expansion errors. `lualatex` handles the same sources cleanly.
+    </Warning>
+  </Tab>
+  <Tab title="macOS">
+    Install [MacTeX](https://tug.org/mactex/). MacTeX is a full TeX Live distribution packaged for macOS and includes all engines and packages the framework needs.
+  </Tab>
+  <Tab title="Linux">
+    Install the full TeX Live scheme from your package manager:
+
+    ```bash
+    # Debian / Ubuntu
+    sudo apt install texlive-full
+
+    # Fedora / RHEL
+    sudo dnf install texlive-scheme-full
+    ```
+  </Tab>
+</Tabs>
+
+The CV uses `lualatex` because `pdflatex` often fails on modern MiKTeX installs with `fontawesome5` font-expansion errors. The cover letter uses `xelatex` because `cover.cls` requires `fontspec` for its custom Lato/Raleway fonts.
+
+### pdftotext (optional)
+
+`/apply` runs an ATS parseability check on the compiled CV: it extracts the PDF's text layer and verifies contact details, reading order, and keyword coverage the way an applicant-tracking system sees them. This requires `pdftotext` from [poppler](https://poppler.freedesktop.org/), which is separate from any LaTeX distribution:
+
+<CodeGroup>
+  ```bash macOS
+  brew install poppler
+  ```
+
+  ```bash Debian / Ubuntu
+  sudo apt install poppler-utils
+  ```
+
+  ```powershell Windows
+  choco install poppler
+  ```
+</CodeGroup>
+
+If `pdftotext` is missing, `/apply` skips the mechanical check with a warning and falls back to a visual keyword review — everything else in the workflow runs normally.
+
+---
+
+## Fork and Clone
+
+Fork the repository to your GitHub account and clone it locally:
+
+```bash
+gh repo fork MadsLorentzen/ai-job-search --clone
+cd ai-job-search
+```
+
+If you prefer the manual route, fork on GitHub first, then clone your fork with `git clone`.
+
+---
+
+## Install Job Search CLI Tools
+
+Run the following from the repository root to install dependencies for all five job portal CLI tools:
+
+<CodeGroup>
+  ```bash Bash / zsh / Git Bash
+  for tool in jobbank-search jobdanmark-search jobindex-search jobnet-search linkedin-search; do
+    cd .agents/skills/$tool/cli && bun install && cd ../../../..
+  done
+  ```
+
+  ```powershell PowerShell
+  $tools = @("jobbank-search", "jobdanmark-search", "jobindex-search", "jobnet-search", "linkedin-search")
+  foreach ($tool in $tools) {
+    Set-Location ".agents/skills/$tool/cli"
+    bun install
+    Set-Location "..\..\..\..\"
+  }
+  ```
+</CodeGroup>
+
+The `linkedin-search` install is optional: it has zero runtime dependencies and runs with plain `bun`; `bun install` only pulls TypeScript dev types. `linkedin-search` is country-agnostic and works for any location via the `-l` flag (e.g. `-l "Berlin, Germany"`).
+
+<Note>
+  The four Danish portals (Jobbank, Jobdanmark, Jobindex, Jobnet) are built for the Danish market. If you are outside Denmark, use `/add-portal` to generate an equivalent search skill for your local job board — the command investigates the portal, scaffolds the CLI, and test-runs a live query before registering anything.
+</Note>
+
+---
+
+## Run /setup
+
+Start Claude Code from the repository root, then run the onboarding command:
+
+```bash
+claude
+```
+
+```
+/setup
+```
+
+Claude will detect what is in your `documents/` folder and offer three onboarding paths:
+
+- **Path A (documents folder):** Drop your CV PDF, LinkedIn export, diplomas, reference letters, or past applications into `documents/`. Claude reads and cross-references everything before proposing profile updates. This path is idempotent — re-running it as you add more files will not duplicate or overwrite existing content; conflicts are surfaced for explicit resolution.
+- **Path B (single CV import):** Mention a file with `@` or paste your CV text directly in chat. Claude extracts the data and asks follow-up questions for anything missing.
+- **Path C (interview mode):** Walk through structured questions section by section. Good for starting from scratch without existing documents.
+
+All three paths converge on the same result: a complete set of populated profile files.
+
+### What Gets Populated
+
+| File | Content |
+|------|---------|
+| `CLAUDE.md` | Your full candidate profile |
+| `01-candidate-profile.md` | Structured education, experience, and skills |
+| `02-behavioral-profile.md` | Behavioral assessment |
+| `04-job-evaluation.md` | Personalized skill match areas and career goals |
+| `05-cv-templates.md` | Profile statement templates for your background |
+| `07-interview-prep.md` | STAR examples from your experience |
+| `cv/main_example.tex` | Your LaTeX CV with actual details |
+| `search-queries.md` | Job search queries for `/scrape` |
+
+### Re-running Setup for a Single Section
+
+You can update specific sections without re-running the full profile interview:
+
+```
+/setup --section skills
+/setup --section experience
+/setup --section search
+```
+
+The `--section search` option is especially useful as your job search priorities evolve. It re-runs the search configuration interview and suggests role types you may not have considered based on your full profile.
+
+---
+
+## Optional — Salary Benchmarking
+
+The framework includes a salary benchmarking tool that works with any salary data you provide (union statistics, Glassdoor exports, survey data, or personal research). If you have data to add:
+
+- **Option A:** Create `salary_data.json` manually in the repository root. See `tools/README_SALARY_TOOL.md` for the expected format.
+- **Option B:** Convert from an Excel file:
+
+```bash
+pip install openpyxl
+python tools/convert_salary_excel.py path/to/salary-data.xlsx --source "My Salary Data 2025"
+```
+
+This creates `salary_data.json`, which the `/apply` workflow uses for salary benchmarking. If you skip this step, the salary lookup is simply omitted. See [Salary Benchmarking](/customization/salary-benchmarking) for more details.
+
+---
+
+## Test the Workflow
+
+With setup complete, test the full application workflow against a real job posting:
+
+```
+/apply https://jobindex.dk/job/1234567
+```
+
+Or paste a job description directly:
+
+```
+/apply [paste job posting text here]
+```
+
+Claude will evaluate fit against your profile, ask whether to proceed, draft a tailored CV and cover letter, have a reviewer agent critique the drafts, revise and compile both PDFs, and present the final output with a verification checklist.

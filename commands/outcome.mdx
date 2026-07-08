@@ -1,0 +1,70 @@
+---
+title: "Track Application Results with /outcome"
+sidebarTitle: "/outcome"
+description: "Log interview stages, offers, and rejections. /outcome archives submitted materials and feeds outcome data back into your fit framework over time."
+---
+
+The `/outcome` command is the framework's record-keeping layer for what happens after you submit an application. It writes to two places: the `job_search_tracker.csv` status column — which `/scrape` and `/rank` use for deduplication and exclusion — and the per-application archive folder at `documents/applications/<company>_<role>/`, which holds the job posting, submitted drafts, and an `outcome.md` that `/setup` Path A mines to calibrate your fit framework. `/outcome` writes this data; `/setup` interprets it. The command never edits your evaluation framework or profile files itself.
+
+## Usage
+
+Invoke `/outcome` with or without arguments:
+
+```
+/outcome
+/outcome acme
+/outcome acme ml engineer
+```
+
+With no arguments, `/outcome` lists all open applications (those not yet at a final status) and asks which one to update. Passing a company name — or a company name and role — targets that application directly. If the application was made outside the workflow, `/outcome` will collect the company, role, date applied, channel, and posting URL and add a tracker row.
+
+## Outcome Statuses
+
+`/outcome` classifies what happened into **progress updates** (application still open) and **final resolutions** (application closed).
+
+**Progress updates**
+
+| Event | Description |
+|-------|-------------|
+| Interview stage | Phone screen, technical, case, or final round — scheduled or completed |
+| Offer received | An offer has been made but not yet accepted or declined |
+
+**Final resolutions**
+
+| Status | Meaning |
+|--------|---------|
+| `hired` | You accepted an offer |
+| `offer_declined` | You received an offer and turned it down |
+| `rejected` | Explicit rejection at any stage |
+| `no_response` | No reply; you decide when to call it — the command does not impose a cutoff |
+| `interview_only` | Reached interviews but the process stalled or was abandoned without an explicit rejection |
+
+Applications with status `in_progress` are kept open and excluded from calibration until they resolve.
+
+## What Gets Archived
+
+For each application, `/outcome` creates or updates a folder at `documents/applications/<company>_<role>/` (lowercase, underscores for spaces). The folder contains:
+
+| File | Contents |
+|------|----------|
+| `job_posting.md` | The posting text, fetched from the tracker's source URL or pasted by you if the URL is dead |
+| `cv_draft.tex` | A copy of the CV submitted for this application |
+| `cover_letter.tex` | A copy of the cover letter submitted for this application |
+| `outcome.md` | Interview stages reached, dates, any feedback you recall, and the final status |
+
+Existing files in the archive folder are never overwritten — the archived version is always the one that was actually submitted. If no draft files exist (because the application was made outside `/apply`), those files are skipped with a note.
+
+The `documents/applications/` folder is already gitignored, so all personal data inside it stays local.
+
+## The Calibration Loop
+
+`/outcome` data feeds directly into `/setup` Path A, which calibrates your fit evaluation framework based on real outcomes. Once a few applications resolve, `/setup` reads the `outcome.md` files in your archive and uses them to:
+
+- Tune `04-job-evaluation.md` — adjusting fit scoring based on what kinds of roles actually got you to interviews
+- Surface **STAR candidates** in `07-interview-prep.md` — noting which real experiences you drew on when discussing interview feedback
+
+Only applications with a **final** status (`hired`, `offer_declined`, `rejected`, `no_response`, `interview_only`) are used for calibration. Applications still marked `in_progress` are skipped. When enough resolved applications accumulate — or when two or more share a pattern (same role type rejected twice, same sector going silent) — `/outcome` will prompt you to run `/setup` to fold them into your framework.
+
+<Tip>
+Run `/setup` (Path A) after three or more applications have resolved. It reads your outcome archive and adjusts fit scoring based on what actually got interviews — making future evaluations progressively more accurate. The more resolved applications you have on record, the sharper the calibration.
+</Tip>

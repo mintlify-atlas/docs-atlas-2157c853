@@ -1,0 +1,105 @@
+---
+title: "Full Application Workflow with /apply"
+sidebarTitle: "/apply"
+description: "The /apply command runs a drafter-reviewer pipeline: evaluates fit, drafts a tailored LaTeX CV and cover letter, compiles PDFs, and runs ATS verification — all automatically."
+---
+
+`/apply` is the core command of the AI Job Search framework. Given a job posting URL or pasted description, it runs an end-to-end application pipeline: evaluating your fit against the role, drafting a tailored LaTeX CV and cover letter, running a second Claude agent to research the company and critique the drafts, revising based on that feedback, compiling both PDFs and verifying their layout, checking the CV's text layer for ATS parseability, and presenting the final output with a verification checklist. Every claim in the output is grounded in your actual profile — no skills or experience are fabricated.
+
+## Usage
+
+```bash
+# Pass a job posting URL
+/apply https://jobindex.dk/job/1234567
+
+# Or paste the job description directly
+/apply <paste job description>
+```
+
+If a job portal blocks automated access to its posting pages, paste the full job description text instead of a URL. The rest of the workflow is identical.
+
+## How It Works
+
+<Steps>
+  <Step title="Parse the Job Posting">
+    If a URL is provided, `/apply` fetches the posting content with `WebFetch`. If text is pasted, it uses that directly. It then extracts the company name, role title, department (if mentioned), location, and posting language (Danish or English) — these are carried through every subsequent step.
+  </Step>
+  <Step title="Evaluate Fit">
+    The drafter reads your `04-job-evaluation.md` scoring framework and `01-candidate-profile.md`, then evaluates the posting across four dimensions: skills match, experience match, behavioral/culture match, and (if configured) a salary benchmark from `salary_lookup.py`. The result is a structured evaluation — which requirements you meet, which you don't, and an overall fit score with a recommendation (strong / moderate / weak). You're asked whether to proceed before any drafting begins.
+  </Step>
+  <Step title="Draft CV and Cover Letter">
+    The drafter writes two files using your profile and the role context:
+    - **`cv/main_<company>.tex`** — always in English, tailored to the specific role using the moderncv/banking format. The profile statement and experience bullets are reframed to match job requirements. Target length: 2 pages.
+    - **`cover_letters/cover_<company>_<role>.tex`** — written in the language of the job posting (Danish posting → Danish cover letter). Uses your `cover.cls` template and is tailored to the specific role and company. Target length: 1 page.
+  </Step>
+  <Step title="Spawn a Reviewer Agent">
+    A second Claude agent is dispatched with a fresh context. Both draft files are passed to it inline — the reviewer never reads them from disk, which keeps the workflow token-efficient. The reviewer researches the company (website, recent news, strategic initiatives, team/department context) and critiques the drafts against your profile, behavioral assessment, and writing style guide. It returns structured edits (JSON with exact `old_string` / `new_string` pairs) plus narrative suggestions grouped by category: missed keywords, company-specific angles, action-oriented reframing, and tone/style issues.
+  </Step>
+  <Step title="Revise Based on Feedback">
+    The drafter applies the reviewer's structured edits directly using the Edit tool, then works through each narrative suggestion category in turn — weaving in company-specific angles (after verifying the reviewer's research claims independently), rewriting passive or generic phrasing, and applying writing-style-guide fixes. Any suggestion that would require fabricating skills or experience is skipped; genuine gaps are acknowledged honestly rather than papered over.
+  </Step>
+  <Step title="Compile and Inspect PDFs">
+    Both documents are compiled:
+    - **CV:** `lualatex` (pdflatex fails on modern MiKTeX with fontawesome5 font-expansion errors)
+    - **Cover letter:** `xelatex` (`cover.cls` requires fontspec)
+
+    After compilation, `/apply` reads both PDFs and verifies the layout: the CV must be exactly 2 pages with no orphaned `\cventry` titles, and the cover letter must fit exactly 1 page with the signature block visible and bullet fonts consistent. If the layout has problems, the `.tex` files are edited and recompiled until both PDFs pass inspection. This step is mandatory and cannot be skipped.
+  </Step>
+  <Step title="ATS Text-Layer Check">
+    The CV's embedded text layer is extracted with `pdftotext` and verified the way an ATS parser sees it: contact details must be present as literal text, there should be no `(cid:NNN)` glyph markers or garbled characters, and the reading order must match the visual page order. The posting's required and preferred keywords are then checked against the extraction — keywords the profile supports are added where they fit naturally; genuine gaps stay visible and are never keyword-stuffed. If `pdftotext` is not installed, this step degrades gracefully to a visual keyword review using the rendered PDF.
+  </Step>
+  <Step title="Present Final Output">
+    `/apply` runs the full verification checklist from `CLAUDE.md` once, re-reading both files to confirm their final on-disk state. It then presents: a pass/fail report for each checklist item, a summary of 3–5 key tailoring decisions (what was emphasised, which company-specific angles were incorporated, what the reviewer's most impactful suggestion was), and a list of the two output files. You're prompted to open the files for a final review before submitting.
+  </Step>
+</Steps>
+
+## What Makes This Different
+
+<CardGroup cols={2}>
+  <Card title="PDF Verification Loop" icon="file-pdf" href="/workflow/apply-command">
+    Most LaTeX templates produce output that looks fine in the `.tex` file but breaks in the PDF: job titles orphan to the next page, cover letters spill onto page 2, bullet fonts silently fall back to the body font. `/apply` compiles and visually inspects every PDF and applies targeted fixes (`\needspace`, `\enlargethispage`, font-matching wrappers) until the layout is clean — on every single application.
+  </Card>
+  <Card title="ATS Text-Layer Check" icon="magnifying-glass" href="/workflow/apply-command">
+    An ATS reads the PDF's embedded text, not the rendered page — and LaTeX can silently produce PDFs whose text extracts as garbage. `/apply` extracts the compiled CV's text layer and verifies contact details, reading order, and keyword coverage against what a parser actually sees, not what the page looks like.
+  </Card>
+  <Card title="Relevance-Weighted Cutting" icon="scissors" href="/workflow/apply-command">
+    When a CV overflows 2 pages, `/apply` does not cut mechanically from the oldest section. It scores each candidate line by relevance to the target posting, uniqueness in the document, and whether the cover letter depends on it — then cuts the lowest-scoring line first. An older-role bullet that hits posting keywords survives ahead of a recent-role bullet that does not.
+  </Card>
+  <Card title="Drafter-Reviewer Separation" icon="users" href="/workflow/apply-command">
+    The drafter writes; a second Claude agent with a fresh context researches the company and critiques the drafts. The drafter then revises. This two-pass structure catches missed keywords, weak framing, and generic language that a single agent often leaves in.
+  </Card>
+  <Card title="Token-Efficient Dispatch" icon="bolt" href="/workflow/apply-command">
+    The reviewer agent receives both draft files inline rather than re-reading them from disk. The verification checklist runs exactly once at the end. Files already in context from an earlier step are never re-read. These rules keep the workflow tractable even for long applications.
+  </Card>
+</CardGroup>
+
+## Output Files
+
+`/apply` writes two files per application, named after the company and role:
+
+| File | Description |
+|------|-------------|
+| `cv/main_<company>.tex` | Tailored CV in LaTeX (moderncv/banking style), always in English, compiled to `cv/main_<company>.pdf` |
+| `cover_letters/cover_<company>_<role>.tex` | Cover letter in the posting's language, compiled to `cover_letters/cover_<company>_<role>.pdf` |
+
+The naming convention keeps every application's files distinct so you can track multiple in-progress applications without overwriting each other.
+
+## Salary Benchmarking
+
+During the fit evaluation step, if `salary_lookup.py` is configured with your salary data, `/apply` runs:
+
+```bash
+python salary_lookup.py "<Company Name>" --json
+# If the posting specifies a city:
+python salary_lookup.py "<Company Name>" --city "<City>" --json
+```
+
+The JSON output is parsed and the salary benchmark for that company is included in the fit evaluation presented to you. The tool works with any salary data you provide — union statistics, Glassdoor exports, personal research — and is entirely optional. See `tools/README_SALARY_TOOL.md` for setup instructions. If the tool is not configured or returns an error, the salary step is silently skipped.
+
+<Note>
+  `pdftotext` (from the poppler library) is an optional dependency used for the ATS text-layer check. If it is not installed, `/apply` prints a one-line notice that the mechanical parse check is skipped, performs the keyword-coverage check visually against the rendered PDF instead, and notes the degraded mode in the Step 6 report. The rest of the workflow is unaffected. Install instructions: `brew install poppler` (macOS), `apt install poppler-utils` (Debian/Ubuntu), `choco install poppler` (Windows).
+</Note>
+
+<Warning>
+  All claims in the CV and cover letter are verified against your actual profile before output is presented. `/apply` never fabricates skills, experience, or achievements. If a posting requirement is a genuine gap in your background, it is acknowledged honestly — either reframed around adjacent experience in the cover letter, or left absent from the CV rather than stuffed in as a keyword.
+</Warning>

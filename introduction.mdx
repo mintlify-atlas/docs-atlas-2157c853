@@ -1,0 +1,86 @@
+---
+title: "AI Job Search: Claude-Powered Application Framework"
+sidebarTitle: "Introduction"
+description: "AI Job Search is an open-source framework built on Claude Code. Fork it, fill in your profile, and let Claude evaluate jobs, tailor CVs, write cover letters, and prepare for interviews."
+---
+
+AI Job Search is an open-source framework that turns [Claude Code](https://claude.com/claude-code) into a full-stack job application assistant. Fork the repository, populate your profile once, and Claude handles the rest: evaluating job postings against your background, tailoring your CV in LaTeX, writing targeted cover letters, and preparing you for interviews. The core workflow is language- and country-agnostic — built for anyone who wants structured, AI-driven help across the entire application lifecycle.
+
+## How It Works
+
+The framework is organized around three primary commands that take you from setup to submitted application:
+
+```
+/setup          /scrape              /apply <url>
+  |                |                     |
+  v                v                     v
+Fill in        Search job           Evaluate fit
+your profile   portals              Score & recommend
+  |                |                     |
+  v                v                     v
+Profile        Present matches      Draft CV + Cover Letter
+files ready    with fit ratings     (LaTeX, tailored)
+                   |                     |
+                   v                     v
+               Pick a match         Reviewer agent critiques
+               -> /apply            -> Revise -> Final output
+```
+
+Run `/setup` once to build your profile from your documents, a CV paste, or an interview. Run `/scrape` to search job portals and get a ranked list of matches. Run `/apply` on any posting URL or pasted text to produce a tailored CV and cover letter, reviewed by a second Claude agent before you ever see it.
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card
+    title="Drafter-Reviewer Pipeline"
+    icon="code-branch"
+    href="/workflow/apply-command"
+  >
+    A second Claude agent, spawned with fresh context, researches the company and critiques every draft before it reaches you. The drafter revises based on that feedback — catching missed keywords, weak framing, and generic language a single pass misses.
+  </Card>
+  <Card
+    title="PDF Verification Loop"
+    icon="file-pdf"
+    href="/workflow/apply-command"
+  >
+    Every CV and cover letter is compiled to PDF and visually inspected. The CV must be exactly 2 pages with no orphaned entry titles; the cover letter must be exactly 1 page with the signature visible. LaTeX is iterated automatically until both pass.
+  </Card>
+  <Card
+    title="ATS Text-Layer Verification"
+    icon="magnifying-glass"
+    href="/workflow/apply-command"
+  >
+    ATS parsers read a PDF's embedded text, not its rendered pixels. The framework extracts the compiled CV's text layer with `pdftotext` and verifies contact details, reading order, and keyword coverage the way an applicant-tracking system actually sees it.
+  </Card>
+  <Card
+    title="Relevance-Weighted CV Cutting"
+    icon="scissors"
+    href="/workflow/apply-command"
+  >
+    When a CV overflows 2 pages, content is not cut mechanically from the oldest section. Each line is scored by relevance to the target posting, uniqueness in the document, and whether the cover letter depends on it. The lowest-scoring line is cut first.
+  </Card>
+  <Card
+    title="Multi-Portal Job Scraping"
+    icon="globe"
+    href="/workflow/scrape-command"
+  >
+    Built-in CLI tools search Jobindex, Jobnet, Akademikernes Jobbank, Jobdanmark, and LinkedIn in one pass, deduplicate results, and present matches sorted by fit. Add your own local job board with `/add-portal`.
+  </Card>
+  <Card
+    title="Extensible Architecture"
+    icon="puzzle-piece"
+    href="/commands/add-portal"
+  >
+    Every part of the framework is designed to be swapped: bring your own LaTeX templates with `/add-template`, add job portals for any market with `/add-portal`, and customize fit criteria, writing style, and profile data in plain Markdown files.
+  </Card>
+</CardGroup>
+
+## Who Should Use This
+
+AI Job Search is designed for job seekers who are comfortable working in a terminal, running CLI commands, and editing configuration files in a text editor. You do not need to write any code — but you do need to be able to fork a GitHub repository, run `npm install`, and type commands inside Claude Code. If that describes you and you are tired of manually tailoring CVs and cover letters for every application, this framework automates the repetitive parts while keeping you in control of what gets submitted.
+
+## Not Affiliated With Anthropic
+
+<Note>
+  This is an independent open-source project and is not affiliated with, endorsed by, sponsored by, or maintained by Anthropic. Anthropic and Claude Code are referenced only to describe the toolchain this workflow uses.
+</Note>

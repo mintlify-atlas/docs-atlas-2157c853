@@ -1,0 +1,129 @@
+---
+title: "AI Job Search Repository File Structure"
+sidebarTitle: "File Structure"
+description: "A complete map of every file and directory in the AI Job Search repo — what each one does, which ones you edit, and which are managed automatically."
+---
+
+The repository has a specific layout that separates your profile files, framework commands, job portal tools, and output documents. Understanding this layout makes it clear which files you own and configure versus which ones define the workflow and should be left untouched.
+
+## Top-Level Structure
+
+The full directory tree looks like this:
+
+```
+ai-job-search/
+├── CLAUDE.md                          # Main candidate profile + workflow rules
+├── .claude/
+│   ├── commands/
+│   │   ├── apply.md                   # /apply workflow (drafter-reviewer)
+│   │   ├── setup.md                   # /setup onboarding (documents folder, CV import, or interview)
+│   │   ├── expand.md                  # /expand competency enrichment from documents and online presence
+│   │   ├── add-template.md            # /add-template register custom LaTeX templates
+│   │   ├── add-portal.md              # /add-portal generate a job-portal search skill for your market
+│   │   ├── rank.md                    # /rank triage scraped jobs into a ranked shortlist
+│   │   ├── outcome.md                 # /outcome record application results, archive materials
+│   │   └── reset.md                   # /reset wipe profile data or documents folder
+│   ├── skills/
+│   │   ├── job-application-assistant/  # Core application skill
+│   │   │   ├── SKILL.md               # Skill definition
+│   │   │   ├── 01-candidate-profile.md # Your education, experience, skills
+│   │   │   ├── 02-behavioral-profile.md# PI/DISC/personality assessment
+│   │   │   ├── 03-writing-style.md    # Tone, structure, do's and don'ts
+│   │   │   ├── 04-job-evaluation.md   # Scoring framework for job fit
+│   │   │   ├── 05-cv-templates.md     # LaTeX CV structure + tailoring rules
+│   │   │   ├── 06-cover-letter-templates.md # LaTeX cover letter templates
+│   │   │   └── 07-interview-prep.md   # STAR examples + interview framework
+│   │   ├── job-scraper/               # Job search orchestration
+│   │   └── upskill/                   # /upskill skill gap analysis and learning plan
+│   └── settings.json                  # Claude Code permissions (shared, scoped)
+├── .agents/skills/                    # Job portal CLI tools
+│   ├── jobbank-search/                # Akademikernes Jobbank (Denmark)
+│   ├── jobdanmark-search/             # Jobdanmark.dk (Denmark)
+│   ├── jobindex-search/               # Jobindex.dk (Denmark)
+│   ├── jobnet-search/                 # Jobnet.dk (Denmark, government portal)
+│   └── linkedin-search/               # LinkedIn public job listings (country-agnostic)
+├── cv/
+│   └── main_example.tex               # moderncv LaTeX template
+├── cover_letters/
+│   ├── cover.cls                      # Custom cover letter LaTeX class
+│   └── OpenFonts/                     # Lato + Raleway fonts
+├── templates/                         # Custom templates registered via /add-template
+│   └── README.md                      # Folder layout instructions
+├── documents/                         # Career source materials for /setup Path A and /expand
+│   ├── README.md                      # Folder layout instructions
+│   ├── cv/                            # Master CV (PDF or .tex)
+│   ├── linkedin/                      # LinkedIn profile export (PDF)
+│   ├── diplomas/                      # Degree certificates and transcripts
+│   ├── references/                    # Reference letters
+│   └── applications/                  # Past application records (<company>_<role>/)
+├── salary_lookup.py                   # Salary benchmarking tool (BYO data)
+├── tools/
+│   ├── convert_salary_excel.py        # Convert salary Excel to JSON
+│   └── README_SALARY_TOOL.md          # Salary tool setup instructions
+├── job_scraper/                       # Scraper state (seen jobs, results)
+├── upskill/                           # /upskill report output (markdown reports per run)
+├── job_search_tracker.csv             # Application tracking spreadsheet
+└── SETUP.md                           # Detailed setup guide
+```
+
+## Profile Files (Your Data)
+
+These are the files you populate — either manually or through the `/setup` onboarding flow. They contain your personal information and drive the quality of every generated application.
+
+**`CLAUDE.md`** is the central candidate profile and the first file Claude reads in any session. It contains your identity, education, professional experience, technical skills, behavioral profile, target sectors, and deal-breakers. It also defines the workflow rules and verification checklist that Claude follows during `/apply`. You can fill it in manually or let `/setup` populate it from your source documents.
+
+**`.claude/skills/job-application-assistant/`** holds seven numbered skill files that store structured versions of your profile:
+
+| File | Content |
+|------|---------|
+| `01-candidate-profile.md` | Structured education, experience, and skills |
+| `02-behavioral-profile.md` | PI, DISC, or self-assessed behavioral traits |
+| `03-writing-style.md` | Tone, sentence structure, and writing dos and don'ts |
+| `04-job-evaluation.md` | Personalized scoring framework and career goals |
+| `05-cv-templates.md` | Profile statement templates for different role types |
+| `06-cover-letter-templates.md` | Cover letter structure and framing templates |
+| `07-interview-prep.md` | STAR examples from your actual experience |
+
+**`.claude/skills/job-scraper/search-queries.md`** contains the job search queries used by `/scrape`. It lists the roles, skills, and locations to search for across each configured job portal. Update this file (or re-run `/setup --section search`) as your priorities evolve.
+
+**`documents/`** is the source materials folder used by `/setup` Path A and the `/expand` command. Drop your CV PDFs, LinkedIn export, degree certificates, reference letters, and records of past applications here. See `documents/README.md` for the expected subfolder layout.
+
+## Framework Files (Don't Touch)
+
+These files define how the workflow operates. They are part of the framework itself — not your personal data — and should not be edited unless you are intentionally customizing the framework behavior.
+
+**`.claude/commands/`** contains the definitions for every slash command: `apply.md`, `setup.md`, `expand.md`, `add-template.md`, `add-portal.md`, `rank.md`, `outcome.md`, `reset.md`, and `upskill.md`. Claude Code reads these when you run the corresponding command.
+
+**`.claude/skills/*/SKILL.md`** files are the skill definition headers that Claude reads to understand the purpose and scope of each skill directory. They are not your profile data.
+
+**`.agents/skills/`** contains the five job portal CLI tools — TypeScript applications run with Bun. Each subdirectory (`jobbank-search`, `jobdanmark-search`, `jobindex-search`, `jobnet-search`, `linkedin-search`) is a self-contained CLI package with its own `bun install` dependency step.
+
+**`cv/main_example.tex`** is the stock moderncv LaTeX template in the banking style. The `/apply` command uses this as the base when drafting a tailored CV. If you register a custom template via `/add-template`, it is stored under `templates/` instead and `main_example.tex` is left untouched.
+
+**`cover_letters/cover.cls`** and **`cover_letters/OpenFonts/`** provide the cover letter LaTeX class and the bundled Lato and Raleway font files it depends on. The cover letter compiles with `xelatex` because `cover.cls` requires `fontspec` for these custom fonts.
+
+## Output Directories
+
+These locations are written to automatically as you use the framework. You read them (to retrieve your compiled PDFs) but generally do not edit them by hand.
+
+**`cv/main_<company>.tex` and `.pdf`** — `/apply` generates one tailored CV per application, named after the company. The `.tex` source and the compiled PDF both land here.
+
+**`cover_letters/cover_<company>_<role>.tex` and `.pdf`** — the matching cover letter for each application, named after the company and role.
+
+**`documents/applications/`** — after you run `/outcome` on an application, the submitted CV, cover letter, and job posting text are archived here under a `<company>_<role>/` subfolder. These records are also read by `/setup` Path A to calibrate the fit framework from your application history.
+
+**`job_scraper/`** — stores the scraper's state between runs, including `seen_jobs.json` which tracks which postings have already been surfaced so they are not shown again on the next `/scrape`.
+
+**`upskill/`** — each run of `/upskill` writes a markdown report here containing the skill gap heatmap and learning plan for that session.
+
+**`job_search_tracker.csv`** — a running spreadsheet of all applications you have tracked with `/outcome`. Updated automatically; you can open it in any spreadsheet application to review your pipeline.
+
+## Tools Directory
+
+**`salary_lookup.py`** (repo root) is the salary benchmarking script invoked by `/apply`. It reads `salary_data.json` and returns a benchmark range for the target role. If `salary_data.json` is absent, the script exits cleanly and `/apply` skips the salary step.
+
+**`tools/convert_salary_excel.py`** converts a structured Excel file of salary data into the `salary_data.json` format expected by `salary_lookup.py`. Run it once after downloading salary statistics from a union, survey, or Glassdoor export. See `tools/README_SALARY_TOOL.md` for the expected column layout.
+
+<Note>
+  `salary_data.json` is listed in `.gitignore` and will never be committed to your repository. This keeps your personal salary research private even if you share or publish your fork.
+</Note>

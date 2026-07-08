@@ -1,0 +1,99 @@
+{
+  "projectType": "framework",
+  "projectName": "AI Job Search",
+  "projectDescription": "An AI-powered job application framework built on Claude Code that lets you fork, fill in your profile, and have Claude evaluate jobs, tailor CVs, write cover letters, and prepare you for interviews.",
+  "theme": "luma",
+  "primaryColor": "#dc7454",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "quickstart",
+              "setup"
+            ]
+          },
+          {
+            "group": "Core Workflow",
+            "pages": [
+              "workflow/setup-command",
+              "workflow/scrape-command",
+              "workflow/apply-command",
+              "workflow/rank-command"
+            ]
+          },
+          {
+            "group": "Extended Commands",
+            "pages": [
+              "commands/outcome",
+              "commands/expand",
+              "commands/upskill",
+              "commands/add-portal",
+              "commands/add-template",
+              "commands/reset"
+            ]
+          },
+          {
+            "group": "Customization",
+            "pages": [
+              "customization/profile-files",
+              "customization/latex-templates",
+              "customization/job-portals",
+              "customization/salary-benchmarking"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/file-structure",
+              "reference/prerequisites",
+              "reference/troubleshooting"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Drafter-reviewer two-agent workflow for CV and cover letter generation",
+    "Mandatory PDF compilation and visual inspection with layout fixing",
+    "ATS parseability verification on compiled CV text layer",
+    "Relevance-weighted CV cutting when overflowing page limits",
+    "Multi-portal job scraping (Jobindex, Jobbank, Jobdanmark, Jobnet, LinkedIn)",
+    "Batch job scoring with parallel agents via /rank",
+    "Competency enrichment from public profiles and documents via /expand",
+    "Skill gap analysis and learning plan via /upskill",
+    "Salary benchmarking with fuzzy company name matching",
+    "Custom LaTeX template registration via /add-template",
+    "Generative job-portal skill scaffolding via /add-portal",
+    "Application outcome tracking that calibrates the fit framework over time"
+  ],
+  "publicApiSurface": [
+    "/setup — onboard profile via documents folder, CV import, or interview",
+    "/setup --section <name> — update a specific profile section",
+    "/scrape — search job portals for matching positions",
+    "/apply <url|text> — full drafter-reviewer application workflow",
+    "/rank — batch-score scraped jobs into a ranked shortlist",
+    "/rank --top <N> — shortlist size override",
+    "/rank --all — re-rank all non-applied jobs",
+    "/outcome <company> — record application results and archive materials",
+    "/expand — enrich profile from public online presence",
+    "/upskill — skill gap analysis and learning plan",
+    "/upskill <url> — skill gap against a specific posting",
+    "/add-template — register custom LaTeX CV or cover letter template",
+    "/add-template --list — list registered templates",
+    "/add-template --use <name> — activate a template",
+    "/add-portal — scaffold a job-portal search skill for any market",
+    "/add-portal --list — list installed portal skills",
+    "/reset profile|documents|all — wipe profile data",
+    "salary_lookup.py <company> — CLI salary benchmark lookup",
+    "salary_lookup.py --json — machine-readable output",
+    "tools/convert_salary_excel.py — convert Excel salary data to JSON"
+  ]
+}

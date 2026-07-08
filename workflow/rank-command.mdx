@@ -1,0 +1,98 @@
+---
+title: "Batch Job Scoring with /rank"
+sidebarTitle: "/rank"
+description: "Batch-score all scraped job postings against your fit framework using parallel agents. Get a ranked shortlist with strengths, gaps, and deal-breaker flags before investing time in /apply."
+---
+
+`/rank` sits between `/scrape` and `/apply`. After a scrape returns more postings than you want to evaluate by eye, `/rank` batch-scores every new one against your fit framework using parallel agents — each agent fetches the live posting and scores it across four dimensions — then returns a ranked shortlist with honest per-job strengths, gaps, deal-breaker vetoes, and deadline urgency flags. The scores are deliberately lightweight triage, not final evaluations: `/apply` always re-evaluates with full company research when you decide to apply.
+
+## Usage
+
+```bash
+# Score all new postings from the last scrape
+/rank
+
+# Score only postings in a specific area
+/rank data science
+
+# Re-score everything (useful after updating your profile)
+/rank --all
+
+# Control the shortlist size (default is 5)
+/rank --top 10
+```
+
+By default, `/rank` scores only postings with status `new` in `job_scraper/seen_jobs.json`. Jobs that already appear in `job_search_tracker.csv` (applied to or consciously tracked) are excluded regardless of flags. The `--all` flag re-scores every non-applied posting, including ones ranked in previous runs.
+
+## How Scoring Works
+
+`/rank` dispatches parallel `general-purpose` agents via the Agent tool, roughly 5 jobs per agent. Each agent receives the job list, the posting URLs, and a compact scoring rubric extracted from your profile files — it never re-reads those files from disk. Each agent fetches its assigned posting URLs with `WebFetch` and scores only from the content it actually retrieves.
+
+Each job is scored across four dimensions drawn from your `04-job-evaluation.md` framework:
+
+| Dimension | Weight | What it measures |
+|-----------|--------|-----------------|
+| **Technical** | 30% | How well the role's required and preferred skills match your technical profile |
+| **Experience** | 25% | How directly your work history maps to the responsibilities described in the posting |
+| **Behavioral** | 15% | How well the role's culture and work style align with your behavioral profile |
+| **Career Alignment** | 30% | How well the role fits your target directions, motivators, and stated career goals |
+
+In addition to the four scored dimensions, each job receives two flags:
+
+- **Location:** `PASS` (within acceptable commute), `FAIL` (requires relocation or is definitively outside your range), or `FLAG` (heavy travel or borderline distance — stays in ranking but marked with ⚠ for your judgment).
+- **Deadline urgency:** postings with a deadline within 7 days receive a 🔥 marker and win ties in the ranking. Postings whose deadline has already passed are moved to `expired` without being scored.
+
+**Deal-breaker veto:** a location `FAIL` excludes a job from the shortlist entirely, no matter how high its content score. Vetoed jobs are listed separately with the reason.
+
+**Expired posting detection:** if an agent cannot fetch a posting URL, or the page has expired or redirected to a listing index, the job is marked `expired` — it is never scored from the title alone and content is never fabricated.
+
+The overall score is computed as a weighted average of the four dimensions. Jobs are then mapped to verdict bands: **Strong Fit** (75+), **Good Fit** (60–74), **Moderate Fit** (45–59), **Weak Fit** (30–44), **Poor Fit** (below 30).
+
+## Triage vs. Full Evaluation
+
+<Note>
+  `/rank` scores from posting text and your profile only. It does **not** perform company research, salary lookups, or spawn a reviewer agent — that depth belongs to `/apply` and would make `/rank` too expensive to run on every scrape batch. The triage scores are a routing decision, not a hiring decision. `/apply`'s Step 1 evaluation, which adds live company research and can incorporate salary benchmarks, always re-runs from scratch when you choose to apply to a job — triage scores are passed as prior context but never substitute for the full evaluation.
+</Note>
+
+## Reading the Output
+
+```
+## Job Ranking — YYYY-MM-DD
+
+Ranked 12 new postings (5 shortlisted, 4 below threshold, 3 expired/vetoed).
+
+### Shortlist
+
+| # | Score | Verdict     | Title              | Company    | Location      | Deadline   |   |
+|---|-------|-------------|--------------------|------------|---------------|------------|---|
+| 1 | 81    | Strong Fit  | Data Scientist     | Acme Corp  | Copenhagen    | 2025-02-15 | 🔥|
+| 2 | 74    | Good Fit    | ML Engineer        | TechCo     | Aarhus        | 2025-02-28 |   |
+| 3 | 68    | Good Fit    | Analytics Lead     | DataFirm   | Copenhagen    | 2025-03-05 | ⚠ |
+
+### Why these ranked highest
+**1. Data Scientist at Acme Corp (81)** — [strength bullets and honest gap per job]
+...
+
+### Below threshold
+| Score | Verdict      | Title             | Company   | One-line reason |
+
+### Excluded
+- [Title] at [Company] — location FAIL: requires relocation to Jutland
+- [Title] at [Company] — expired 2025-01-10
+```
+
+Every claim in the output traces to fetched posting text or your profile. The output explicitly labels the scores as triage from posting text only.
+
+After presenting the shortlist, `/rank` asks which jobs you want to apply to. Give it one or more numbers and it hands off to the full `/apply` workflow on those posting URLs, passing the triage verdict as prior context.
+
+## Keeping Scores Fresh
+
+After you update your profile — adding a new skill, changing your career goals, or running `/setup --section experience` — the scores from a previous `/rank` run may no longer reflect your current fit. Use `--all` to re-score everything:
+
+```bash
+/rank --all
+```
+
+This re-scores every non-applied posting in `seen_jobs.json`, including ones that were already ranked. State is updated in place: `status`, `rank_score`, `rank_verdict`, and `rank_date` fields are overwritten for re-scored jobs. The underlying deduplication structure used by `/scrape` is never modified, so re-ranking never interferes with future scrape runs.
+
+For more on what happens after you pick a job to apply to, see the [/apply command guide](/workflow/apply-command). To get new postings to rank, see the [/scrape command guide](/workflow/scrape-command).

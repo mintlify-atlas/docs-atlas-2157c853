@@ -1,0 +1,43 @@
+---
+title: "Reset Profile Data with /reset"
+sidebarTitle: "/reset"
+description: "Wipe your candidate profile, documents folder, or both with /reset. Shows exactly what will be deleted and requires explicit confirmation before any data is removed."
+---
+
+The `/reset` command wipes parts of the framework back to a blank state. You might reach for it when starting over with a different role focus, when your initial setup was based on incomplete information, or when testing the framework from scratch. It covers two independent scopes — your candidate profile files and your `documents/` folder — and can clear either or both. Before doing anything, `/reset` shows you exactly what will be deleted and requires an explicit confirmation; nothing is removed until you confirm.
+
+## Usage
+
+```
+/reset profile
+/reset documents
+/reset all
+```
+
+If you run `/reset` with no argument, the command asks which scope to clear before continuing.
+
+## What Each Mode Deletes
+
+| Mode | What is deleted | What is preserved |
+|------|-----------------|-------------------|
+| `profile` | Candidate profile (`01-candidate-profile.md`), behavioral profile (`02-behavioral-profile.md`), profile statement templates in `05-cv-templates.md`, STAR examples and STAR candidate stubs in `07-interview-prep.md` | Framework rules (`03-writing-style.md`, `04-job-evaluation.md`, `06-cover-letter-templates.md`), command files, LaTeX templates, tracker CSV |
+| `documents` | All files in `documents/cv/`, `documents/linkedin/`, `documents/diplomas/`, `documents/references/`, and `documents/applications/` | Folder structure, `documents/README.md`, profile files, everything else |
+| `all` | Everything `profile` deletes plus everything `documents` deletes | Framework rules, command files, LaTeX templates |
+
+Profile resets replace files with blank templates (section headings only, with a `<!-- Run /setup to populate this file -->` comment) rather than deleting them outright. Structural content in `05-cv-templates.md` and `07-interview-prep.md` — tailoring guidelines, the STAR format explanation, tough questions, interview tips — is preserved; only the candidate-specific data inside those files is cleared.
+
+## Confirmation Step
+
+<Warning>
+`/reset` shows a detailed list of every file and folder that will be affected — including whether each profile file already has content or is already empty — before touching anything. After showing this list, it presents the confirmation prompt:
+
+> **This cannot be undone.**
+>
+> Type **`RESET`** (all caps) to confirm, or anything else to cancel.
+
+Nothing is deleted until you type `RESET` exactly. Any other response cancels the operation with the message "Reset cancelled. Nothing was changed."
+</Warning>
+
+<Tip>
+Use `/reset profile` followed by `/setup` to re-onboard with a different role focus. Your documents in the `documents/` folder are preserved, so `/setup` Path A will re-read them and rebuild your profile with a fresh perspective — including any new materials you've added since the first setup.
+</Tip>

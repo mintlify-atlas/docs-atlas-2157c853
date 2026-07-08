@@ -1,0 +1,59 @@
+---
+title: "Enrich Your Profile with /expand"
+sidebarTitle: "/expand"
+description: "Scan public sources linked in your profile — GitHub, portfolio sites, Kaggle, Google Scholar — plus course syllabi to surface skills documents alone don't capture."
+---
+
+The `/expand` command enriches your candidate profile by discovering competencies that your uploaded documents don't make explicit. It scans every source it can reach — your `documents/` folder, public online profiles you've linked, GitHub repositories, and the official syllabi for named courses and certifications — then maps what it finds to skills and knowledge areas not already in your profile. Every discovered competency is tagged with the source it came from so you can verify or remove individual items later. `/expand` is additive only: it never modifies, overwrites, or restructures existing profile content.
+
+## Usage
+
+```
+/expand
+```
+
+`/expand` takes no arguments. It auto-discovers what sources are available based on what's in your `documents/` folder and what URLs appear in your candidate profile.
+
+## What /expand Scans
+
+`/expand` processes sources in the following order:
+
+**documents/ folder**
+- `documents/cv/` — every course, certification, job responsibility bullet, independent project, and volunteer role listed in your CV
+- `documents/linkedin/` — courses, certifications, endorsements, volunteer experiences, and projects from your LinkedIn export that aren't already in the CV
+- `documents/diplomas/` — all module and course names on transcripts, thesis title and subject area, any named specialisation or track
+- `documents/references/` — competency language used by referees: specific skills, tools, methods, or qualities they name
+
+**Public online presence**
+
+For each URL present in your candidate profile (`01-candidate-profile.md`):
+- **GitHub** — fetches public profile, pinned repositories, and the full repository list; reads each README for languages, frameworks, libraries, and topics
+- **Portfolio site / personal website** — tools, methods, and projects mentioned on the page
+- **Kaggle** — datasets, competitions, notebooks, and awards
+- **Google Scholar / ResearchGate** — publication titles, abstracts, and named methods or domains
+
+**Course and certification syllabi**
+
+For every named course or certification found in the documents scan, `/expand` searches the web for the official syllabus or exam guide and extracts the competency list it implies.
+
+## How Additions Are Tagged
+
+Every competency `/expand` adds to your profile carries a source annotation in parentheses — for example:
+
+- *(Coursera — Deep Learning Specialisation)*
+- *(GitHub — project-name)*
+- *(Reference letter — Jens Jensen)*
+
+Anything inferred from tone, language, or indirect signals — rather than directly stated — is marked explicitly: *[Inferred from LinkedIn About — review before relying on this]*. This labeling makes future `/expand` runs idempotent (already-tagged items are not re-added) and lets you verify or remove any item you disagree with.
+
+<Tip>
+Run `/expand` immediately after `/setup` to surface skills that documents alone don't make explicit. GitHub repositories and course syllabi often reveal competencies — specific frameworks, research methods, or domain knowledge — that never appear on a CV.
+</Tip>
+
+## What /expand Does NOT Do
+
+<Note>
+`/expand` is **additive only**. It never overwrites, restructures, or removes existing content in your profile files. If a competency is already present in `01-candidate-profile.md` or `02-behavioral-profile.md` in any form, it will not be re-added.
+
+`/expand` also does not scrape private or authentication-walled sources. If a linked page requires a login to view, that source is skipped and noted in the summary report. Only publicly accessible pages are fetched.
+</Note>

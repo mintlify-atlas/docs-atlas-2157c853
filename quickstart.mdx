@@ -1,47 +1,122 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with AI Job Search in 15 Minutes"
+sidebarTitle: "Quickstart"
+description: "Fork the repo, install dependencies, run /setup to build your profile, and submit your first AI-tailored job application in under 15 minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+In this guide you will fork the AI Job Search repository, install the required CLI tools and LaTeX distribution, build your candidate profile with `/setup`, search for matching jobs with `/scrape`, and run your first full application workflow with `/apply`. The whole process takes about 15 minutes for setup; individual applications take only as long as it takes Claude to draft, review, and compile the documents.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Fork and clone">
+    Fork the repository to your GitHub account and clone it locally with the GitHub CLI:
 
     ```bash
-    npm install your-package
+    gh repo fork MadsLorentzen/ai-job-search --clone
+    cd ai-job-search
     ```
+
+    If you prefer the manual route, fork on GitHub first, then clone your fork.
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
-    ```
+  <Step title="Install job search tools">
+    The job portal CLIs are written in TypeScript and run with [Bun](https://bun.sh). Install dependencies for all five tools from the repository root:
+
+    <CodeGroup>
+      ```bash Bash / zsh / Git Bash
+      for tool in jobbank-search jobdanmark-search jobindex-search jobnet-search linkedin-search; do
+        cd .agents/skills/$tool/cli && bun install && cd ../../../..
+      done
+      ```
+
+      ```powershell PowerShell
+      $tools = @("jobbank-search", "jobdanmark-search", "jobindex-search", "jobnet-search", "linkedin-search")
+      foreach ($tool in $tools) {
+        Set-Location ".agents/skills/$tool/cli"
+        bun install
+        Set-Location "..\..\..\..\"
+      }
+      ```
+    </CodeGroup>
+
+    The `linkedin-search` install is optional: it has zero runtime dependencies and runs with plain `bun`; `bun install` only pulls TypeScript dev types.
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+
+  <Step title="Install LaTeX">
+    The `/apply` command compiles your CV with `lualatex` and your cover letter with `xelatex`. You need a LaTeX distribution that includes both engines:
+
+    - **Windows:** [MiKTeX](https://miktex.org/download)
+    - **macOS:** [MacTeX](https://tug.org/mactex/)
+    - **Linux:** `sudo apt install texlive-full` or `sudo dnf install texlive-scheme-full`
+
+    See [Prerequisites](/setup#prerequisites) for full details on why `lualatex` is required for the CV and `xelatex` for the cover letter.
+  </Step>
+
+  <Step title="Build your profile">
+    Start Claude Code in the repository root, then run the onboarding command:
 
     ```bash
-    your-cli start
+    claude
     ```
+
+    ```
+    /setup
+    ```
+
+    Claude will detect what you have and offer three paths:
+
+    - **Path A (documents folder):** Drop your CV PDF, LinkedIn export, diplomas, reference letters, or past applications into the `documents/` folder. Claude reads and cross-references everything before proposing profile updates. Best when you have several source files. Safe to re-run as you add more material.
+    - **Path B (single CV import):** Mention a file with `@` or paste your CV text directly. Claude extracts the data and asks follow-up questions for anything missing.
+    - **Path C (interview mode):** Walk through structured questions section by section. Good for starting from scratch.
+
+    All three paths produce the same result: a fully populated set of profile files ready for `/scrape` and `/apply`.
+  </Step>
+
+  <Step title="Search for jobs">
+    Once your profile is set up, search for matching positions across all configured portals:
+
+    ```
+    /scrape
+    ```
+
+    Claude searches multiple job portals, deduplicates results, and presents them sorted by fit against your profile. Pick a match to hand off directly to `/apply`, or run `/rank` first to batch-score a larger result set into a prioritized shortlist.
+  </Step>
+
+  <Step title="Apply to a job">
+    Run `/apply` with a job posting URL or paste the full job description text:
+
+    ```
+    /apply https://jobindex.dk/job/1234567
+    ```
+
+    ```
+    /apply <paste the full job description here>
+    ```
+
+    Claude will evaluate fit against your profile, draft a tailored CV and cover letter in LaTeX, spawn a reviewer agent to critique the drafts, revise based on that feedback, compile both PDFs, and present the final output with a verification checklist.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+<Note>
+  The `/apply` command includes an optional ATS parseability check that extracts the compiled CV's text layer using `pdftotext` from [poppler](https://poppler.freedesktop.org/). If `pdftotext` is not installed, the check degrades gracefully to a visual keyword review and everything else works normally. Install it with `brew install poppler` (macOS), `sudo apt install poppler-utils` (Debian/Ubuntu), or `choco install poppler` (Windows).
+</Note>
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+---
+
+Ready to go deeper? These pages cover each core command in full detail:
+
+<CardGroup cols={2}>
+  <Card
+    title="The /apply Command"
+    icon="paper-plane"
+    href="/workflow/apply-command"
+  >
+    How the drafter-reviewer pipeline works, what each verification step checks, and how to customize the LaTeX templates.
+  </Card>
+  <Card
+    title="The /setup Command"
+    icon="sliders"
+    href="/workflow/setup-command"
+  >
+    A full breakdown of all three onboarding paths, which files get populated, and how to re-run setup for individual sections.
+  </Card>
+</CardGroup>

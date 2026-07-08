@@ -1,0 +1,80 @@
+---
+title: "Register a Custom LaTeX Template with /add-template"
+sidebarTitle: "/add-template"
+description: "Register your own LaTeX CV or cover letter template. /add-template captures compile instructions, test-compiles the template, and wires it into /apply."
+---
+
+The framework ships with two LaTeX templates out of the box: a [moderncv](https://ctan.org/pkg/moderncv) banking-style CV compiled with `lualatex`, and a custom `cover.cls` cover letter compiled with `xelatex`. If you have your own LaTeX template you'd prefer to use, `/add-template` registers it with the framework. It interviews you for the compile instructions, stores the template files with placeholder tokens instead of personal data, runs a mandatory test compile, and activates the template so every future `/apply` run drafts from it.
+
+## Usage
+
+```
+/add-template
+/add-template --list
+/add-template --use awesome-cv
+/add-template --use default
+```
+
+With no arguments, `/add-template` starts the registration flow. `--list` shows a table of all registered templates with their engine, fonts, and active status. `--use <name>` switches the active template, and `--use default` reverts to the stock moderncv or cover.cls template.
+
+## Registration Flow
+
+<Steps>
+  <Step title="Specify type and source">
+    Tell `/add-template` whether this is a **CV** template or a **cover letter** template, then provide the source: a path or `@`-mentioned `.tex` file, pasted LaTeX content, or a directory containing the template plus any `.cls`/`.sty` files and font assets. If the template references a custom document class that isn't part of standard TeX distributions, you'll be asked to provide it — the template cannot compile without it.
+  </Step>
+  <Step title="Interview: compile instructions">
+    `/add-template` reads your LaTeX source first and infers as much as it can — document class, `\fontspec` calls, geometry, colors — then presents those inferences for confirmation rather than asking blind questions. It collects: a kebab-case template name (e.g. `awesome-cv`, `classic-serif`), the compile engine (`lualatex`, `xelatex`, or `pdflatex`), font sources (bundled files or system fonts), style rules to preserve (color scheme, section order, heading style, bullet formatting), page limit (default 2 pages for a CV, 1 page for a cover letter), and any known pitfalls.
+
+    If your template uses `fontspec` or loads font files by path, it requires `xelatex` or `lualatex` — `/add-template` will flag this rather than letting you select `pdflatex` and discover the failure at compile time.
+  </Step>
+  <Step title="Store under templates/ with [PLACEHOLDER] tokens">
+    The template is stored at `templates/cv/<name>/` or `templates/cover_letters/<name>/`. All personal data in the source is replaced with `[PLACEHOLDER]` tokens (`[YOUR_NAME]`, `[YOUR_EMAIL]`, `[YOUR_PHONE]`, `[YOUR_LINKEDIN_URL]`, and so on) so the stored template is profile-agnostic and safe to commit or share. The LaTeX structure, preamble, and styling are kept exactly as provided.
+
+    Alongside `template.tex`, the folder receives any `.cls`/`.sty` files, a `fonts/` subdirectory for bundled font files, and a `TEMPLATE.md` manifest recording the engine, page limit, fonts, compile command, style rules, and known pitfalls.
+  </Step>
+  <Step title="Mandatory test compile">
+    Before the template is activated, `/add-template` fills every `[PLACEHOLDER]` with realistic dummy data — name, contact line, one education entry, one job entry with three bullets — compiles with the declared engine, and verifies the layout renders correctly (no overlapping text, fonts loaded, page count plausible). If the compile fails, the relevant error lines are shown and diagnosed. Fixes that can be applied automatically (font `Path` values, for example) are applied and the compile is retried. Fixes that require input only you have (a missing font file, a license-restricted class) are requested before continuing.
+
+    The template is not activated until the test compile passes cleanly.
+  </Step>
+  <Step title="Activate: /apply drafts from it going forward">
+    Activation inserts a small managed block at the top of the relevant guidance file — `05-cv-templates.md` for CVs, `06-cover-letter-templates.md` for cover letters. The block tells `/apply` which template skeleton to use, which manifest to read for style rules, which engine to compile with, and what the page limit is. The rest of the guidance file (tailoring rules, page budget, cutting rules) is left untouched and continues to apply.
+
+    Exactly one managed block per guidance file is maintained. Switching templates replaces the block; `--use default` removes it entirely, restoring the stock moderncv or cover.cls guidance.
+  </Step>
+</Steps>
+
+## Placeholder Tokens
+
+Templates are stored with `[PLACEHOLDER]` tokens substituted for all personal data:
+
+| Token | Replaced by |
+|-------|-------------|
+| `[YOUR_NAME]` | Full name |
+| `[YOUR_EMAIL]` | Email address |
+| `[YOUR_PHONE]` | Phone number |
+| `[YOUR_LINKEDIN_URL]` | LinkedIn profile URL |
+| *(and others)* | Any other personal identifiers in the source |
+
+This makes the stored template completely profile-agnostic. You can commit it to a public fork, share it with others, or re-register it in a different clone without any personal data leaking.
+
+## Switching Templates
+
+Use the `--use` flag to switch between registered templates at any time:
+
+```
+/add-template --use awesome-cv       # switch to a registered template
+/add-template --use default          # revert to stock moderncv / cover.cls
+/add-template --list                 # see all registered templates and which is active
+```
+
+Switching templates only updates the managed block in the guidance file — all other profile and framework content is untouched.
+
+<Note>
+Font files (TTF/OTF) bundled with your template are copied into the `fonts/` subdirectory of the template folder, and the `Path` values in `\fontspec` calls are adjusted to point to those relative paths. This means the template compiles correctly from any working directory.
+
+**System fonts** (fonts installed on your machine but not bundled with the template) are recorded in the manifest but not copied. If you use the template on a different machine, those fonts must be installed there too, or the compile will fail.
+</Note>
+
+For the full LaTeX template reference, including the stock moderncv and cover.cls templates, see [LaTeX Templates](/customization/latex-templates).

@@ -1,0 +1,209 @@
+---
+title: "Prerequisites and System Requirements"
+sidebarTitle: "Prerequisites"
+description: "Everything you need to install before running AI Job Search: Claude Code, Python 3.10+, Bun, a LaTeX distribution, and optionally pdftotext from poppler."
+---
+
+Before running any commands in AI Job Search you need four tools installed on your machine: **Claude Code** (the CLI that drives the entire framework), **Python 3.10+** (for salary benchmarking), **Bun** (the JavaScript runtime for the job portal CLI tools), and a **LaTeX distribution** with both `lualatex` and `xelatex` (for compiling CVs and cover letters to PDF). A fifth tool, `pdftotext` from poppler, is optional — it powers the ATS parseability check inside `/apply` but the workflow degrades gracefully without it.
+
+## Claude Code (Required)
+
+Claude Code is Anthropic's CLI for Claude. Every framework command (`/apply`, `/setup`, `/scrape`, and so on) runs inside a Claude Code session started from the repository root.
+
+**Install:**
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+**Authentication:** Claude Code requires either an Anthropic API key or a Claude Pro/Team subscription. Follow the prompts on first launch to authenticate.
+
+**Verify:**
+
+```bash
+claude --version
+```
+
+<Note>
+  See the [Claude Code documentation](https://claude.ai/claude-code) for full setup details, including API key configuration and subscription options.
+</Note>
+
+## Python 3.10+ (Required)
+
+Python is needed to run `salary_lookup.py` (the salary benchmarking script) and `tools/convert_salary_excel.py` (which converts Excel salary data to JSON). If you skip salary benchmarking entirely, Python is still required for the dependency to resolve cleanly.
+
+**Verify:**
+
+```bash
+python --version
+```
+
+<Note>
+  On Windows, `python` may not be on your PATH. Use `py --version` instead, which invokes the Python Launcher for Windows and is the most reliable check.
+</Note>
+
+## Bun (Required)
+
+Bun is a fast JavaScript runtime used to execute the five job portal CLI tools in `.agents/skills/`. Each tool is a TypeScript application and is invoked by Claude Code via `bun run`. Without Bun, `/scrape` and all portal-specific search commands will fail.
+
+**Install:**
+
+<CodeGroup>
+
+```bash macOS / Linux
+curl -fsSL https://bun.sh/install | bash
+```
+
+```powershell Windows (PowerShell)
+powershell -ExecutionPolicy Bypass -c "irm https://bun.sh/install.ps1 | iex"
+```
+
+```powershell Windows (winget)
+winget install Oven-sh.Bun
+```
+
+</CodeGroup>
+
+**Verify:**
+
+```bash
+bun --version
+```
+
+After installing Bun, install the dependencies for each job portal CLI tool from the repository root:
+
+```bash
+for tool in jobbank-search jobdanmark-search jobindex-search jobnet-search linkedin-search; do
+  cd .agents/skills/$tool/cli && bun install && cd ../../../..
+done
+```
+
+<Note>
+  For `linkedin-search`, `bun install` is optional — it has zero runtime dependencies and runs with plain `bun`. The install step only pulls TypeScript development types.
+</Note>
+
+## LaTeX Distribution (Required)
+
+A LaTeX distribution provides the `lualatex` and `xelatex` engines used to compile the generated `.tex` files into PDFs. The `/apply` workflow mandates successful compilation and visually inspects the rendered PDFs before presenting output — so this is not optional.
+
+**Install by operating system:**
+
+<Tabs>
+  <Tab title="Windows">
+    Install [MiKTeX](https://miktex.org/download) from miktex.org. MiKTeX can install missing packages on-the-fly, which is convenient for the first compile.
+
+    After installation, verify both engines are available:
+
+    ```powershell
+    lualatex --version
+    xelatex --version
+    ```
+  </Tab>
+  <Tab title="macOS">
+    Install [MacTeX](https://tug.org/mactex/) from tug.org/mactex. MacTeX is a full TeX Live distribution packaged for macOS.
+
+    After installation, verify:
+
+    ```bash
+    lualatex --version
+    xelatex --version
+    ```
+  </Tab>
+  <Tab title="Linux">
+    Install the full TeX Live distribution using your package manager:
+
+    ```bash
+    # Debian / Ubuntu
+    sudo apt install texlive-full
+
+    # Fedora / RHEL
+    sudo dnf install texlive-scheme-full
+    ```
+
+    Verify:
+
+    ```bash
+    lualatex --version
+    xelatex --version
+    ```
+  </Tab>
+</Tabs>
+
+<Warning>
+  The CV **must** be compiled with `lualatex`. Using `pdflatex` will often fail on modern MiKTeX installs with `fontawesome5` font-expansion errors. The cover letter **must** be compiled with `xelatex` because `cover.cls` requires `fontspec` for the custom Lato and Raleway fonts. Make sure your distribution includes the `moderncv` package.
+</Warning>
+
+## pdftotext (Optional)
+
+`pdftotext` is part of the [poppler](https://poppler.freedesktop.org/) utilities and is used by `/apply`'s ATS parseability check. After compiling the CV to PDF, `/apply` extracts the text layer with `pdftotext` and verifies that contact details appear as literal text, the reading order is sane, and the posting's keywords are covered — exactly as an applicant-tracking system would see them.
+
+**Install:**
+
+<CodeGroup>
+
+```bash macOS
+brew install poppler
+```
+
+```bash Debian / Ubuntu
+sudo apt install poppler-utils
+```
+
+```bash Windows (Chocolatey)
+choco install poppler
+```
+
+</CodeGroup>
+
+**Verify:**
+
+```bash
+pdftotext -v
+```
+
+<Tip>
+  If `pdftotext` is not installed, `/apply` skips the mechanical ATS check with a warning and falls back to a visual keyword review. Everything else in the workflow continues normally — you can always add poppler later without re-running setup.
+</Tip>
+
+## Quick Verification
+
+Run all of these at once to confirm your environment is ready:
+
+```bash
+claude --version
+python --version
+bun --version
+lualatex --version
+xelatex --version
+pdftotext -v  # optional
+```
+
+All required tools should print a version string without errors before you proceed to `/setup`.
+
+## Claude Code Permissions
+
+The repository ships with `.claude/settings.json`, which scopes Claude Code's Bash permissions to the specific commands the framework needs:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Skill(job-application-assistant)",
+      "Bash(bun run:*)",
+      "Bash(python salary_lookup.py:*)",
+      "Bash(python3 salary_lookup.py:*)",
+      "Bash(pdftotext:*)"
+    ]
+  }
+}
+```
+
+This means Claude Code will only be allowed to run `bun run`, `python salary_lookup.py`, and `pdftotext` as Bash commands — it cannot run arbitrary shell commands without prompting you first.
+
+<Warning>
+  If you cloned the repository before the shared `settings.json` was introduced, your working copy may contain a stale `.claude/settings.local.json` from an older version that pre-approved broader permissions (`Bash(curl:*)`, `Bash(python:*)`, `Bash(bun:*)`). Those permissions still apply on top of `settings.json`. Remove the stale file to restore the scoped defaults:
+
+  ```bash
+  rm .claude/settings.local.json
+  ```
+</Warning>

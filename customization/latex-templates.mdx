@@ -1,0 +1,126 @@
+---
+title: "Customizing LaTeX CV and Cover Letter Templates"
+sidebarTitle: "LaTeX Templates"
+description: "The framework ships with moderncv (banking style) for CVs and a custom cover.cls for cover letters. Swap in your own templates with /add-template."
+---
+
+The framework ships with two stock LaTeX templates: a [moderncv](https://ctan.org/pkg/moderncv) banking-style CV and a custom `cover.cls` cover letter class with Lato and Raleway fonts sourced from a bundled `OpenFonts/` directory. Both compile reliably on TeX Live and modern MiKTeX without manual font installation. If you have your own LaTeX template you prefer, the `/add-template` command registers it alongside the stock templates and wires it into `/apply` automatically.
+
+## Stock CV Template
+
+The CV uses **moderncv banking style** with a blue colour scheme. The master reference file is `cv/main_example.tex` — a comprehensive skeleton with all sections pre-structured and `[PLACEHOLDER]` tokens where your personal data goes. When `/apply` drafts a tailored CV, it reads this file as a starting point and writes the output to `cv/main_<company>.tex`.
+
+**Key characteristics:**
+
+- Document class: `moderncv` with `banking` style and `blue` colour
+- Name and section heading colour overrides applied via `\renewcommand*` to ensure consistent rendering on lualatex + MiKTeX (without these overrides, headings render black even with `\moderncvcolor{blue}` set)
+- Geometry scale `0.77` (slightly tighter margins than moderncv default) to maximise content area
+- Hard 2-page limit — any compile result other than exactly 2 pages is treated as a failure and iterated on
+
+**Compile command:**
+
+```bash
+cd cv && lualatex main_<company>.tex
+```
+
+The expected output line is `Output written on main_<company>.pdf (2 pages, ...)`. If the page count is not 2, `/apply` iterates on the layout before presenting the result.
+
+## Stock Cover Letter Template
+
+Cover letters use a custom `cover.cls` document class stored in `cover_letters/`. The class bundles Lato and Raleway fonts from `cover_letters/OpenFonts/fonts/` — no system font installation needed.
+
+**Key characteristics:**
+
+- Fonts: Lato (body) and Raleway-Medium (bullets and accents), loaded via `fontspec`
+- Macros: `\namesection`, `\lettercontent`, `\currentdate`, `\closing`, `\signature`
+- Hard 1-page limit and a 250–300 word body text budget
+- Bullet lists must be placed *outside* a `\lettercontent{}` block and wrapped in the matching `\fontspec` declaration (see the template pitfall note in `06-cover-letter-templates.md`)
+
+**Compile command:**
+
+```bash
+cd cover_letters && xelatex cover_<company>_<role>.tex
+```
+
+The expected output is `Output written on cover_<company>_<role>.pdf (1 page, ...)`. Any page count other than 1 is a failure.
+
+## Why lualatex for CV, xelatex for Cover Letter
+
+The two compilers are not interchangeable for these templates:
+
+- **lualatex for the CV** — `fontawesome5`, used in the moderncv banking header for contact icons, triggers font-expansion errors with pdflatex on modern MiKTeX installs. lualatex handles the same sources without those errors and is the documented compile target for the stock CV.
+- **xelatex for the cover letter** — `cover.cls` loads `fontspec` to access the bundled Lato and Raleway OpenType fonts. `fontspec` requires either xelatex or lualatex; xelatex is used here because it interacts more cleanly with the specific font-path declarations in the class file.
+
+Both engines are included in a standard TeX Live or MiKTeX installation.
+
+## Adding a Custom Template
+
+<Steps>
+  <Step title="Run /add-template">
+    Inside Claude Code, run `/add-template` and point it at your `.tex` file. If your template depends on a `.cls` or `.sty` file, or bundles fonts, include those paths too.
+
+    ```
+    /add-template
+    ```
+  </Step>
+  <Step title="Answer the template interview">
+    The command interviews you for the template's key parameters:
+    - **Compile engine** — `lualatex`, `xelatex`, or `pdflatex`
+    - **Font paths** — where bundled fonts live relative to the `.tex` file
+    - **Style rules to preserve** — colour scheme, column layout, any hard constraints
+    - **Hard page limit** — 1 page for cover letters, 2 pages for CVs (or your preference)
+  </Step>
+  <Step title="Mandatory test compile">
+    Before registering anything, `/add-template` runs a test compile with a placeholder profile. If compilation fails, it reports the error and asks you to fix the template before proceeding.
+  </Step>
+  <Step title="Template is activated">
+    Once the test compile passes, the template is stored under `templates/` with `[PLACEHOLDER]` tokens and a `TEMPLATE.md` manifest. A managed block is added to `05-cv-templates.md` or `06-cover-letter-templates.md`, which is what `/apply` reads. No other wiring is needed.
+  </Step>
+</Steps>
+
+For the manual route — without using `/add-template` — update the guidance directly in `05-cv-templates.md` (for CVs) or `06-cover-letter-templates.md` (for cover letters). The drafter reads those files, so any changes there take effect on the next `/apply` run.
+
+See [/add-template](/commands/add-template) for the full command reference.
+
+## Template Storage and Placeholders
+
+Custom templates registered via `/add-template` are stored under `templates/` with the following layout:
+
+```
+templates/
+├── cv/
+│   └── <template-name>/
+│       ├── template.tex     # Profile-agnostic skeleton with [PLACEHOLDER] tokens
+│       ├── TEMPLATE.md      # Manifest: engine, fonts, page limit, style rules, pitfalls
+│       ├── *.cls / *.sty    # Custom class/style files (if needed)
+│       └── fonts/           # Bundled font files (if not using system fonts)
+└── cover_letters/
+    └── <template-name>/
+        └── (same layout)
+```
+
+Templates are stored with `[PLACEHOLDER]` tokens in place of any personal data, so the files are safe to commit and share in your fork. The `/apply` drafter substitutes real profile data at draft time.
+
+## Switching Between Templates
+
+List all registered templates:
+
+```
+/add-template --list
+```
+
+Switch to a registered custom template:
+
+```
+/add-template --use <name>
+```
+
+Revert to the stock moderncv / cover.cls templates:
+
+```
+/add-template --use default
+```
+
+<Warning>
+Custom templates with multi-column or sidebar layouts can break ATS text extraction. An ATS reads the PDF's embedded text layer — not the rendered page — and multi-column LaTeX often extracts with interleaved lines from both columns, making the reading order incoherent to a parser. The stock moderncv banking style is single-column and extracts cleanly. If you switch to a multi-column template, `/apply` will warn you about the ATS compatibility trade-off during the text-layer verification step.
+</Warning>

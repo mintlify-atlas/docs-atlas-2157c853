@@ -1,0 +1,111 @@
+---
+title: "Profile Onboarding with /setup"
+sidebarTitle: "/setup"
+description: "Run /setup inside Claude Code to build your candidate profile from documents, a CV import, or a structured interview. Supports partial re-runs with --section flags."
+---
+
+Before you can search for jobs, apply to postings, or rank opportunities, the AI Job Search framework needs to know who you are. `/setup` is the first command you run inside Claude Code — it collects your professional information and populates all seven profile skill files that every other command depends on. Running `/setup` once gives the framework enough context to evaluate fit, tailor CVs, write cover letters, and configure your job search queries. It can also be re-run at any time to update a specific section without touching the rest of your profile.
+
+## Three Onboarding Paths
+
+`/setup` detects what's already in your `documents/` folder and recommends the best starting point. All three paths converge on the same profile files — choose whichever fits your situation.
+
+<Tabs>
+  <Tab title="Path A — Documents Folder">
+    Path A is the highest-signal option when you have existing career materials. Drop any combination of files into the `documents/` folder and `/setup` will read, cross-reference, and merge everything into your profile.
+
+    **Folder layout:**
+
+    ```
+    documents/
+    ├── cv/              # Master CV — PDF or .tex
+    ├── linkedin/        # LinkedIn profile export (PDF)
+    ├── diplomas/        # Degree certificates and transcripts
+    ├── references/      # Reference letters
+    └── applications/    # Past application records (<company>_<role>/)
+    ```
+
+    Path A processes subfolders in order (`cv/` → `linkedin/` → `diplomas/` → `references/` → `applications/`) and cross-references them for consistency. If it finds a date mismatch between your CV and a diploma, or a title discrepancy between your CV and your LinkedIn export, it surfaces those conflicts for you to resolve before writing anything.
+
+    Past applications in `applications/` are used for calibration: if a role reached interview or offer, that role type is flagged as a confirmed strong-fit signal. If a pattern of rejections emerges, that signal is recorded too.
+
+    Path A is **idempotent** — re-running it as you add documents will not duplicate or overwrite existing content. Conflicts between the new material and what's already in your profile are surfaced explicitly for resolution.
+  </Tab>
+  <Tab title="Path B — CV Import">
+    Path B is the quickest way to get started when you have a single CV or resume. Paste the document text directly into the chat, or use Claude Code's `@`-mention syntax to reference a file.
+
+    `/setup` will:
+    1. Read and extract all structured information — name, contact details, education, work experience, skills, publications, and awards.
+    2. Present a summary of what was found.
+    3. Ask follow-up questions for anything that's missing: behavioral profile, career goals, deal-breakers, salary expectations, and references.
+
+    The follow-up questions fill in the gaps that a CV alone doesn't cover, so the resulting profile is as complete as Path C's interview mode.
+  </Tab>
+  <Tab title="Path C — Interview Mode">
+    Path C walks you through a structured conversation section by section. It's the right choice when you're starting from scratch or prefer to build your profile interactively rather than from documents.
+
+    The nine interview sections are:
+
+    | # | Section | What's covered |
+    |---|---------|----------------|
+    | 1 | **Identity & Contact** | Name, location, phone, email, LinkedIn, GitHub, languages, employment status |
+    | 2 | **Education** | Degrees, institutions, dates, thesis topics, certifications |
+    | 3 | **Professional Experience** | Roles, companies, dates, responsibilities, achievements, tools |
+    | 4 | **Technical Skills** | Programming languages, ML/AI frameworks, domain expertise, platforms |
+    | 5 | **Publications & Awards** | Papers, conference presentations, hackathons, competitions |
+    | 6 | **Behavioral Profile** | Work environment preferences, decision-making style, communication style |
+    | 7 | **Career Goals & Preferences** | Target roles, motivators, deal-breakers, salary expectations, location constraints |
+    | 8 | **References** | Referee names, titles, companies, relationship to you |
+    | 9 | **Search Configuration** | Role titles to search, key skills as search terms, target companies, geographic scope, portals |
+
+    Each section is a natural conversation — you answer in your own words and `/setup` structures the data. Optional sections (Publications, Behavioral Profile, References) can be skipped.
+
+    Section 9 also proactively suggests role types you may not have considered, based on your skill profile. For example, strong Python skills combined with domain expertise might open up Technical Consultant or Solutions Engineer roles you hadn't thought of.
+  </Tab>
+</Tabs>
+
+## What Gets Populated
+
+After `/setup` completes, the following files are written or updated:
+
+| File | Content |
+|------|---------|
+| `CLAUDE.md` | Full candidate profile — name, contact, education, experience, skills, goals, workflow rules, and verification checklist |
+| `01-candidate-profile.md` | Structured profile: Identity, Education, Experience, Independent Projects, Technical Skills, Publications, Awards, References |
+| `02-behavioral-profile.md` | Behavioral assessment or synthesized self-assessment: strongest traits, how you work best, management style preferences |
+| `03-writing-style.md` | Tone, structure, do's and don'ts for CV and cover letter writing |
+| `04-job-evaluation.md` | Personalized scoring framework: strong/moderate/weak skill match areas, career goals, motivation filters |
+| `05-cv-templates.md` | LaTeX CV profile statement templates for different role types |
+| `06-cover-letter-templates.md` | Cover letter opening patterns, bullet structures, closing formulations |
+| `07-interview-prep.md` | STAR examples from your actual experience (Paths B/C) or STAR candidate stubs flagged for manual completion (Path A) |
+| `cv/main_example.tex` | Your LaTeX CV template with actual name, contact info, education, and recent experience |
+| `.claude/skills/job-scraper/search-queries.md` | Job search queries configured for your role titles, skills, and location |
+
+## Updating Specific Sections
+
+You don't need to re-run the full onboarding to update a single part of your profile. Use the `--section` flag to jump directly to any section from Path C:
+
+```bash
+# Reconfigure job search queries after your priorities change
+/setup --section search
+
+# Add or update technical skills
+/setup --section skills
+
+# Update your work history with a new role
+/setup --section experience
+```
+
+When `--section` is used, `/setup` runs only the specified section's questions, then writes only the files that section affects. Everything else in your profile is left untouched.
+
+The `--section search` flag is particularly useful over time: as your job search evolves, you can re-run search configuration to add new role titles, adjust location filters, or point the scraper at different portals — without touching your CV data or behavioral profile.
+
+## Profile Depth Tips
+
+<Tip>
+  The single biggest factor in output quality is how much detail you put into your profile. Don't just list job titles — describe what you actually did: specific projects, tools used, responsibilities, and measurable achievements. Similarly, instead of listing "Python" as a skill, describe how and where you applied it: "Built ML pipelines for customer churn prediction using scikit-learn" gives `/apply` far more to work with when tailoring your CV for a specific posting.
+</Tip>
+
+<Note>
+  Path A is idempotent and safe to re-run as you add materials to your `documents/` folder. Content already present in your profile will not be duplicated or overwritten — only net-new material is proposed as additive changes, and any conflicts between new documents and existing profile content are surfaced explicitly for your review.
+</Note>

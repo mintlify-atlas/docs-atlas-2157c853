@@ -1,0 +1,139 @@
+---
+title: "Troubleshooting AI Job Search"
+sidebarTitle: "Troubleshooting"
+description: "Solutions for common issues: salary data not found, job search CLI errors, LaTeX compilation failures, font problems, and stale Claude Code permission files."
+---
+
+This page covers the most common setup and runtime issues encountered when using the AI Job Search framework — from missing optional dependencies and LaTeX compilation errors to permission file conflicts and layout overflows. Each issue is self-contained; jump to whichever matches your situation.
+
+<AccordionGroup>
+
+  <Accordion title='"salary_data.json not found"'>
+    This is expected behavior if you have not yet set up salary benchmarking. The `/apply` workflow checks for `salary_data.json` in the repository root and silently skips the salary step when the file is absent — no action is required to make the rest of the workflow function.
+
+    If you want salary benchmarking, see the [salary benchmarking setup guide](/customization/salary-benchmarking) for instructions on creating `salary_data.json` manually or converting an Excel file with `tools/convert_salary_excel.py`.
+  </Accordion>
+
+  <Accordion title="Job search CLI tools not working">
+    The five job portal tools in `.agents/skills/` are TypeScript applications that run with Bun. Two things are required for them to work:
+
+    1. **Bun must be installed.** Run `bun --version` to confirm. If it is not found, see the [Bun install instructions](/reference/prerequisites#bun-required).
+
+    2. **`bun install` must have been run inside each CLI directory.** From the repository root:
+
+    ```bash
+    for tool in jobbank-search jobdanmark-search jobindex-search jobnet-search linkedin-search; do
+      cd .agents/skills/$tool/cli && bun install && cd ../../../..
+    done
+    ```
+
+    The tools also require **network access** to fetch job listings from the respective portals. If you are behind a corporate proxy or firewall that blocks outbound requests, the tools will time out or return no results.
+  </Accordion>
+
+  <Accordion title="LaTeX CV compilation errors">
+    The most common source of CV compilation errors is using the wrong engine. The stock moderncv CV **must** be compiled with `lualatex`:
+
+    ```bash
+    cd cv && lualatex main_<company>.tex
+    ```
+
+    Using `pdflatex` will often fail on modern MiKTeX installs with `fontawesome5` font-expansion errors. `lualatex` handles the same sources cleanly.
+
+    The cover letter **must** be compiled with `xelatex`, not `lualatex` or `pdflatex`, because `cover.cls` requires `fontspec` for its custom fonts:
+
+    ```bash
+    cd cover_letters && xelatex cover_<company>_<role>.tex
+    ```
+
+    Also make sure your LaTeX distribution includes the `moderncv` package. On MiKTeX it is installed on-the-fly on first use; on TeX Live it is included in `texlive-full` but may be absent from minimal installs.
+  </Accordion>
+
+  <Accordion title="Fonts not found in cover letter">
+    The cover letter template (`cover.cls`) loads Lato and Raleway from a path relative to the `.tex` file: `cover_letters/OpenFonts/fonts/`. If that directory is missing or empty, `xelatex` will error with a font-not-found message.
+
+    Check that the directory exists and contains the font files:
+
+    ```bash
+    ls cover_letters/OpenFonts/fonts/
+    ```
+
+    You should see subdirectories (or `.ttf`/`.otf` files) for both the Lato and Raleway font families. If the `OpenFonts/` directory is missing, re-clone or re-fetch the repository — the fonts are committed to the repo and should always be present.
+  </Accordion>
+
+  <Accordion title="Claude Code asking for permissions it shouldn't need">
+    If Claude Code prompts you to approve permissions that seem broader than expected (for example, unrestricted `Bash(curl:*)` or `Bash(python:*)`), you likely have a stale `.claude/settings.local.json` from an older clone of this repository.
+
+    Earlier versions of the repo committed a `settings.local.json` that pre-approved broader permissions. When the shared permissions were moved to `settings.json` and scoped down, git left the old `settings.local.json` in place in existing working copies. Its permissions still apply on top of the current `settings.json`.
+
+    Remove it:
+
+    ```bash
+    rm .claude/settings.local.json
+    ```
+
+    After removal, Claude Code will use only the permissions in `.claude/settings.json`, which are scoped to `bun run`, `python salary_lookup.py`, and `pdftotext`. You can keep a `settings.local.json` for your own personal overrides if you need them — just remove the legacy entries from the old version.
+  </Accordion>
+
+  <Accordion title="CV spills to 3 pages">
+    When a tailored CV overflows two pages, do not cut mechanically from the oldest section. The `/apply` workflow uses **relevance-weighted cutting**: each candidate line is scored by (a) relevance to the target job posting, (b) uniqueness in the document — does it say something no other line covers, and (c) whether the cover letter depends on it. The line with the lowest combined score is cut first.
+
+    An older-role bullet that directly hits a posting keyword should survive ahead of a recent-role bullet that adds nothing the posting asks for. Apply the same logic when trimming by hand: read the posting requirements, then ask which lines in the overflow CV are doing the least work relative to this specific role.
+
+    Technical fixes for borderline overflows:
+
+    - Add `\needspace{5\baselineskip}` before `\cventry` blocks to prevent orphaned titles from pushing entries onto a third page.
+    - Use `\enlargethispage{2\baselineskip}` on a page that is just barely overflowing to reclaim space without cutting content.
+  </Accordion>
+
+  <Accordion title="Cover letter spills to 2 pages">
+    The cover letter must fit exactly one page with the signature block visible. Never reduce geometry (margins) or line spacing to make it fit — those fixes break the template's proportions.
+
+    Apply relevance-weighted trimming in two passes:
+
+    1. **First cut:** sentences that restate a bullet point already in the CV. The cover letter should add forward-looking framing and motivation, not repeat CV content in prose form.
+    2. **Second cut:** a bullet point inside the cover letter body that does not hit any keyword from the job posting. If a bullet is not earning its space against this specific role, it should go.
+
+    After each cut, recompile with `xelatex` and check the page count.
+  </Accordion>
+
+  <Accordion title='ATS extraction shows garbage characters like "cid:NNN"'>
+    `cid:NNN` markers in the `pdftotext` output mean a glyph in the PDF is not mapped to a Unicode code point — the font is embedded as an image or subset without a ToUnicode table. This is a font embedding issue in the `.tex` source, not a problem with `pdftotext` itself.
+
+    The most common cause in this framework is contact-detail icons: if the email address or phone number is rendered only via an icon glyph from a symbol font (like FontAwesome) and the literal text is not also present, ATS parsers cannot extract it.
+
+    The `/apply` ATS verification step flags this automatically. The fix is to ensure contact details are printed as literal text in the LaTeX source — the icon can accompany the text, but the text itself must exist as a real character sequence in the `.tex` file, not be implied by the icon alone.
+  </Accordion>
+
+  <Accordion title='"pdftotext" not found'>
+    `pdftotext` is an optional dependency from the [poppler](https://poppler.freedesktop.org/) utilities. If it is not installed, `/apply` skips the mechanical ATS parseability check, logs a warning, and continues with a visual keyword review instead. No other part of the workflow is affected.
+
+    To install it and enable the full ATS check, see [pdftotext in the prerequisites guide](/reference/prerequisites#pdftotext-optional).
+  </Accordion>
+
+  <Accordion title="Job portal returns no results">
+    If a portal CLI runs without errors but returns zero jobs, check two things:
+
+    1. **`bun install` was run for that portal.** Each CLI directory needs its own install step. Re-run `bun install` inside `.agents/skills/<portal-name>/cli/` and try again.
+
+    2. **Area filtering for Jobindex must be in the query string.** Jobindex does not accept a separate location flag — location must be appended directly to the `--query` argument:
+
+    ```bash
+    # Correct
+    --query "python aarhus"
+
+    # Will not filter by location
+    --query "python" --location "aarhus"
+    ```
+
+    For other portals, verify that your search queries in `.claude/skills/job-scraper/search-queries.md` are using the syntax documented in the corresponding `SKILL.md` file under `.agents/skills/<portal-name>/`.
+  </Accordion>
+
+</AccordionGroup>
+
+## Getting Help
+
+If you encounter an issue not covered here, open an issue on the GitHub repository:
+
+[https://github.com/MadsLorentzen/ai-job-search](https://github.com/MadsLorentzen/ai-job-search)
+
+Include your operating system, the command you ran, and the full error message to help diagnose the problem quickly.

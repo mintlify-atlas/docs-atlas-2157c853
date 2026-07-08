@@ -1,0 +1,152 @@
+---
+title: "Salary Benchmarking in /apply"
+sidebarTitle: "Salary Benchmarking"
+description: "Integrate salary data into the /apply fit evaluation. Works with any data source: union statistics, Glassdoor exports, or manual research. Gracefully skipped if not configured."
+---
+
+The salary benchmarking feature is an optional layer on top of the `/apply` fit evaluation. When configured, it shows how a target company's compensation compares to a baseline — helping you calibrate whether a role is financially competitive before you invest time in a full application. The feature is entirely data-source agnostic: it works with union salary statistics, Glassdoor exports, manually researched figures, or any other benchmark you can express in the expected JSON format.
+
+## How It Works
+
+`salary_lookup.py` reads a `salary_data.json` file in the repo root and matches company names using fuzzy logic. The matcher handles:
+
+- **Danish and Nordic characters** — `ø`, `æ`, `å`, `ö`, `ä`, `ü` are matched against their anglicized equivalents (`o`, `ae`, `aa`, etc.) so "Ørsted" matches "Oersted"
+- **Legal suffixes** — common Danish corporate suffixes (`A/S`, `ApS`, `I/S`, `P/S`, `IVS`, `AMBA`) are stripped before matching so "Novo Nordisk A/S" matches "Novo Nordisk"
+- **Noise patterns** — geographic suffixes (`Danmark`, `Denmark`, `Nordic`, `Scandinavia`), group/holding suffixes, and parenthetical sub-entity labels are stripped before comparison
+- **Partial word overlap** — multi-word company names are matched by shared core words, with a minimum score threshold to filter out weak matches
+
+During `/apply` Step 1 (fit evaluation), if `salary_data.json` exists, Claude runs `salary_lookup.py` for the target company and includes the result in the fit evaluation output. If the file is missing, the salary step is silently skipped and the rest of the workflow continues normally.
+
+## salary_data.json Format
+
+The tool expects a JSON file with a `metadata` block describing the data source and baseline, and a `companies` array with one entry per company:
+
+```json
+{
+  "metadata": {
+    "source": "My Union Statistics 2025",
+    "index_baseline": 100,
+    "index_label": "Index",
+    "baseline_description": "Index 100 = median salary for private sector"
+  },
+  "companies": [
+    {
+      "company": "Novo Nordisk A/S",
+      "city": "Bagsværd",
+      "categories": {
+        "all_employees": { "count": 500, "index": 108.5 },
+        "engineering": { "count": 120, "index": 112.3 }
+      }
+    },
+    {
+      "company": "Ørsted A/S",
+      "city": "Fredericia",
+      "categories": {
+        "all_employees": { "count": 200, "index": 105.2 }
+      }
+    }
+  ]
+}
+```
+
+**Field reference:**
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `metadata.source` | Yes | Where the data comes from (for reference only) |
+| `metadata.index_baseline` | Yes | The baseline value (e.g. `100` for index data, `0` for absolute salaries) |
+| `metadata.index_label` | Yes | Label for the index column in output (e.g. `"Index"` or `"Monthly salary (DKK)"`) |
+| `metadata.baseline_description` | No | Human-readable explanation of what the baseline represents |
+| `companies[].company` | Yes | Company name as it appears in your source data |
+| `companies[].city` | No | City/location — used for the `--city` filter when multiple entries share a name |
+| `companies[].categories` | Yes | Named salary categories, each with `count` and/or `index` fields |
+
+The category keys (`all_employees`, `engineering`, etc.) are free-form — use whatever labels match your data source. The display formatter renders them as title-cased strings (`All Employees`, `Engineering`).
+
+## Setup Options
+
+<Tabs>
+  <Tab title="Manual">
+    Create `salary_data.json` by hand in the repo root with data from any source — union statistics, Glassdoor, salary surveys, networking conversations, or personal research.
+
+    ```bash
+    # Create the file in the repo root
+    touch salary_data.json
+    ```
+
+    Then paste in the JSON structure shown above and populate the `companies` array with the employers you want to track. You can start with just a handful of companies and add more incrementally.
+  </Tab>
+  <Tab title="Excel">
+    If your salary data comes from an Excel file (common for union statistics exports), use the included converter:
+
+    ```bash
+    pip install openpyxl
+    python tools/convert_salary_excel.py path/to/salary-data.xlsx \
+      --source "My Salary Data 2025" \
+      --baseline 100 \
+      --baseline-desc "Index 100 = median salary"
+    ```
+
+    The converter auto-detects the Excel layout — it looks for a "Company" or "Firma" column and an optional "City" or "By" column, then treats the remaining columns as salary data, automatically pairing count and index columns where it finds them.
+
+    The output is written to `salary_data.json` in the repo root, ready to use immediately.
+  </Tab>
+  <Tab title="Research template">
+    To build your dataset incrementally from personal research, start with this empty template and add companies as you encounter them during your job search:
+
+    ```json
+    {
+      "metadata": {
+        "source": "Personal research",
+        "index_baseline": 0,
+        "index_label": "Monthly salary (DKK)",
+        "baseline_description": "Approximate monthly salary before tax"
+      },
+      "companies": [
+        {
+          "company": "Example Corp",
+          "city": "Copenhagen",
+          "categories": {
+            "entry_level": { "index": 42000 },
+            "senior": { "index": 55000 }
+          }
+        }
+      ]
+    }
+    ```
+
+    This format uses absolute salary values rather than an index. Set `index_baseline` to `0` (or any non-comparative value) and use `index_label` to describe the unit. Add one company object per employer you research — the fuzzy matcher will find them during `/apply` even if the exact name in the posting differs slightly from what you typed.
+  </Tab>
+</Tabs>
+
+## Using the Tool Directly
+
+You can run `salary_lookup.py` outside of `/apply` to look up a company manually:
+
+```bash
+# Basic lookup by company name
+python salary_lookup.py "Novo Nordisk"
+
+# Filter results by city when multiple entries share a name
+python salary_lookup.py "Ørsted" --city "Fredericia"
+
+# Output as JSON (for scripting or piping)
+python salary_lookup.py "COWI" --json
+
+# List all companies in the dataset
+python salary_lookup.py --list-all
+```
+
+The tool prints a formatted table showing each matched company, its location, the salary categories available, and the index value compared to the baseline. The `vs Baseline` column shows the percentage difference from `index_baseline` — a positive value means above the baseline, negative means below.
+
+If no match is found, the tool suggests trying a shorter or different name and notes that entries in the dataset may include legal suffixes.
+
+<Note>
+`salary_data.json` is listed in `.gitignore` by default and will not be committed to your fork. Salary data sourced from union statistics or employer agreements is often proprietary or confidential, and keeping it out of version control avoids accidental exposure if you ever make your fork public.
+
+If your data is not sensitive and you want to track it in git, remove the `salary_data.json` entry from `.gitignore`.
+</Note>
+
+<Tip>
+If `salary_data.json` does not exist when `/apply` runs, the salary benchmark step is silently skipped — no error, no interruption to the workflow. You will see a note in the fit evaluation output indicating that salary data was not available for the target company. This means you can set up the rest of the framework and come back to salary benchmarking later without any friction.
+</Tip>

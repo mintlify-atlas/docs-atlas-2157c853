@@ -1,0 +1,157 @@
+---
+title: "Built-In and Custom Job Portal Integrations"
+sidebarTitle: "Job Portals"
+description: "The framework ships with five job portal CLI tools: four Danish portals and LinkedIn (country-agnostic). Add any public portal with /add-portal."
+---
+
+Job portal search is implemented as a set of CLI skills living in `.agents/skills/`. Each skill is a self-contained Bun/TypeScript CLI with a `SKILL.md` that tells Claude when and how to invoke it. The framework ships with five portals out of the box: Jobindex, Akademikernes Jobbank (Jobbank), Jobdanmark, and Jobnet (all Danish-market portals), plus LinkedIn as a country-agnostic option that works for any location worldwide. All five use public, unauthenticated endpoints — no API keys or accounts required.
+
+## Built-In Portals
+
+### Jobindex
+
+**Portal:** [jobindex.dk](https://jobindex.dk) — covers thousands of job postings across all sectors in Denmark, updated in real time.
+
+**Key commands:**
+
+```bash
+# Search job listings
+bun run skills/jobindex-search/cli/src/cli.ts search \
+  --query <text> \
+  --jobage <days>
+
+# Fetch full job detail
+bun run skills/jobindex-search/cli/src/cli.ts detail <id>
+```
+
+**Search flags:**
+- `--query` / `-q` — keyword search (job title, skill, company). Required for meaningful results.
+- `--jobage` — filter by posting age: `1` (today), `7`, `14`, `30`, or `9999` (all, default).
+- `--sort` — `score` (relevance, default) or `date` (newest first).
+- `--page` — page number (1-indexed, 20 results per page).
+- `--limit` — cap total results (client-side).
+- `--format` — `json` (default), `table`, or `plain`.
+
+**Important:** The Jobindex API does not support area filtering via a separate flag. To find jobs in a specific city, include the city name in `--query` — for example `--query "data engineer københavn"` or `--query "python aarhus"`.
+
+### Jobbank (Akademikernes Jobbank)
+
+**Portal:** [jobbank.dk](https://jobbank.dk) — Denmark's primary job portal for highly educated candidates. Covers academic, graduate, and professional positions including Ph.D. roles, postdocs, and graduate trainee programmes. Uses the RSS feed for search (up to 100 results) and JSON-LD parsing for detail pages.
+
+```bash
+bun run skills/jobbank-search/cli/src/cli.ts search --query <text>
+bun run skills/jobbank-search/cli/src/cli.ts detail <id>
+```
+
+### Jobdanmark
+
+**Portal:** [jobdanmark.dk](https://jobdanmark.dk) — a general Danish job board with approximately 15,000+ active listings across 10 categories and all Danish municipalities. Covers a broad range of sectors including trades, healthcare, education, IT, and office roles.
+
+```bash
+bun run skills/jobdanmark-search/cli/src/cli.ts search --query <text>
+bun run skills/jobdanmark-search/cli/src/cli.ts detail <id>
+```
+
+### Jobnet
+
+**Portal:** [jobnet.dk](https://jobnet.dk) — the official Danish government job portal operated by STAR (Styrelsen for Arbejdsmarked og Rekruttering). Approximately 21,000+ active jobs at any time. Covers public-sector positions as well as many private-sector listings, and is a common source for government, healthcare, and social-work roles.
+
+```bash
+bun run skills/jobnet-search/cli/src/cli.ts search --query <text>
+bun run skills/jobnet-search/cli/src/cli.ts detail <id>
+```
+
+### LinkedIn
+
+**Portal:** LinkedIn public job board — country-agnostic, works for any market worldwide. Built on LinkedIn's public `jobs-guest` endpoints, which require no authentication and no API key. Takes the search location as an explicit `-l` flag, so the same skill works out of the box wherever you are.
+
+**Zero runtime dependencies** — it runs with just `bun`. Running `bun install` for the linkedin-search skill only pulls TypeScript dev types.
+
+**Key commands:**
+
+```bash
+# Search job listings (--location is required)
+bun run skills/linkedin-search/cli/src/cli.ts search \
+  --location "Copenhagen, Denmark" \
+  --query <text> \
+  --jobage <days>
+
+# Fetch full job detail
+bun run skills/linkedin-search/cli/src/cli.ts detail <id>
+```
+
+**Search flags:**
+- `--location` / `-l` — **required.** A LinkedIn place string, e.g. `"Berlin, Germany"`, `"Mumbai, Maharashtra, India"`, `"London, United Kingdom"`, or `"Remote"`.
+- `--query` / `-q` — keyword search (title, skill, role). Recommended.
+- `--jobage` — posted within N days: `1`, `7`, `14`, `30`.
+- `--remote` — `remote`, `hybrid`, or `onsite` (workplace-type filter).
+- `--page` — page number (1-indexed, 10 results per page).
+- `--limit` / `-n` — cap total results (client-side).
+- `--format` — `json` (default), `table`, or `plain`.
+
+**Usage examples:**
+
+```bash
+# Data engineer roles in Copenhagen, last 7 days
+bun run skills/linkedin-search/cli/src/cli.ts search \
+  -q "data engineer" -l "Copenhagen, Denmark" --jobage 7 --format table
+
+# Remote product manager roles
+bun run skills/linkedin-search/cli/src/cli.ts search \
+  -q "product manager" -l "Remote" --remote remote --format table
+
+# Full details for a specific posting
+bun run skills/linkedin-search/cli/src/cli.ts detail 4426311357 --format plain
+```
+
+<Warning>
+LinkedIn's `jobs-guest` endpoints are public but automated access is against LinkedIn's Terms of Service. Use this skill for personal job searching only — keep request volume low and do not use it for bulk data collection or commercial purposes.
+</Warning>
+
+## Installing Portal Dependencies
+
+Install all five portals in sequence from the repo root:
+
+```bash
+cd .agents/skills/jobbank-search/cli && bun install && cd ../../../..
+cd .agents/skills/jobdanmark-search/cli && bun install && cd ../../../..
+cd .agents/skills/jobindex-search/cli && bun install && cd ../../../..
+cd .agents/skills/jobnet-search/cli && bun install && cd ../../../..
+cd .agents/skills/linkedin-search/cli && bun install && cd ../../../..
+```
+
+The `linkedin-search` install is optional since it has zero runtime dependencies; `bun install` there only pulls TypeScript dev types.
+
+## Adding a New Portal
+
+To add a job board for your local market, run `/add-portal` and provide the portal's URL. The command investigates the portal's search URL pattern, result-page structure, and access rules (robots.txt, terms of service), scaffolds a CLI skill with the same structure and output contract as the shipped portals, and test-runs a live query before registering anything.
+
+Auth-walled portals are declined. Portals with restrictive terms receive a prominent personal-use-only warning in the generated skill's `SKILL.md`. The generated skill is market-specific and lives in your fork; the generator itself is the universal part.
+
+See [/add-portal](/commands/add-portal) for the full command reference.
+
+## Portal Skill Structure
+
+Every portal skill — both the shipped ones and any generated by `/add-portal` — follows the same canonical layout:
+
+```
+<name>/
+├── SKILL.md
+├── url-reference.md
+└── cli/
+    ├── package.json
+    ├── tsconfig.json
+    └── src/
+        ├── cli.ts
+        └── commands/
+            ├── search.ts
+            └── detail.ts
+```
+
+- **`SKILL.md`** — the skill definition consumed by Claude: name, description, trigger phrases, allowed tools, and usage documentation.
+- **`url-reference.md`** — the portal's search URL patterns and endpoint structure, used for maintenance and by `/add-portal` when scaffolding.
+- **`cli/src/cli.ts`** — the CLI entry point that dispatches to `search` and `detail` subcommands.
+- **`cli/src/commands/search.ts`** — implements the `search` command: constructs the API/HTML request, parses results, and outputs them in the requested format.
+- **`cli/src/commands/detail.ts`** — implements the `detail` command: fetches and parses a single job posting by ID or URL.
+
+All errors are written to stderr as `{ "error": "...", "code": "..." }` and the process exits with code `1`, so Claude can reliably detect and report failures.
